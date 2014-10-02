@@ -34,6 +34,7 @@ class Quad
     private int width;
     private int height;
 
+    GLArrayBuffer   texcord;
     GLArrayBuffer   vertex;
     GLElementBuffer index;
 
@@ -45,28 +46,31 @@ class Quad
     /* Generate & upload geometry */
     public void tesselate() 
     {
-        vec3[] points = new vec3[(width+1)*(height+1)]; 
-        for (int x = 0; x < width + 1; x++) {
-            for (int y = 0; y < height + 1; y++) {
-                int i = x * (height+1) + y;
+        int pw = width+1,
+            ph = height+1;
+
+        vec3[] points = new vec3[pw * ph];
+        vec3[] tex    = new vec2[pw * ph];
+        for (int x = 0; x < pw; x++) {
+            for (int y = 0; y < ph; y++) {
+                int i = x * ph + y;
                 points[i] = vec3(x*0.5f,y*0.5f,0);
             }
         }
 
         int i = 0;
-        int h = this.height;
         ushort[] idx = new ushort[width * height * 6];
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                idx[i++] = cast(ushort)( x*(h+1) + y + 1 ); // tl 
-                idx[i++] = cast(ushort)( x*(h+1) + y ); // bl
-                idx[i++] = cast(ushort)((x+1)*(h+1) + y ); // br
+                idx[i++] = cast(ushort)( x*ph + y + 1 ); // tl 
+                idx[i++] = cast(ushort)( x*ph + y ); // bl
+                idx[i++] = cast(ushort)((x+1)*ph + y ); // br
 
                 tri(points[idx[i-3]], points[idx[i-2]], points[idx[i-1]]);
 
-                idx[i++] = cast(ushort)( x*(h+1) + y + 1 ); // tl 
-                idx[i++] = cast(ushort)((x+1)*(h+1) + y ); // br
-                idx[i++] = cast(ushort)((x+1)*(h+1) + y+1 ); // tr
+                idx[i++] = cast(ushort)( x*ph + y + 1 ); // tl 
+                idx[i++] = cast(ushort)((x+1)*ph + y ); // br
+                idx[i++] = cast(ushort)((x+1)*ph + y+1 ); // tr
 
                 tri(points[idx[i-3]], points[idx[i-2]], points[idx[i-1]]);
             }
