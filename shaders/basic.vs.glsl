@@ -1,10 +1,20 @@
 #version 330
 
-in vec3 position;
-out vec3 color;
+uniform mat4 Projection;
+uniform mat4 View;
+uniform mat4 Model;
+
+in vec3 Vertex;
+in vec2 TexCoord0;
+in vec3 Normal;
+
+out vec2 uv;
+out vec3 worldNormal;
 
 void main(void)
 {
-    color = position;
-    gl_Position = vec4(position, 1);
+    worldNormal = Normal;
+    uv = TexCoord0;
+
+    gl_Position = Projection * View * Model * vec4(Vertex, 1);
 }

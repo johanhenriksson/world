@@ -4,60 +4,143 @@ import gl3n.linalg;
 /* for debug */
 import std.stdio;
 
-struct Vertex {
-    vec3 pos;
-    vec3 n;
-    vec2 uv;
-}
-
-/*
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
-        glEnableVertexAttribArray(position);
-        glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 0, null);
-
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, null);
-
-        glDisableVertexAttribArray(position);
-*/
-
-void tri(vec3 a, vec3 b, vec3 c) {
-    writeln(format("Tri (%f,%f,%f)", a.x, a.y, a.z));
-    writeln(format("    (%f,%f,%f)", b.x, b.y, b.z));
-    writeln(format("    (%f,%f,%f)", c.x, c.y, c.z));
-}
-
-class Quad
+abstract class GLArray 
 {
     private uint vao;
-    private int width;
-    private int height;
 
-    GLArrayBuffer   texcord;
-    GLArrayBuffer   vertex;
-    GLElementBuffer index;
+    private GLArrayBuffer vertexBuffer;
+    private GLArrayBuffer normalBuffer;
+    private GLArrayBuffer texcoordBuffer;
+    private GLElementBuffer indexBuffer;
 
-    public this(int width, int height) {
-        this.width = width;
-        this.height = height;
+    public this() {
+        /* Create vertex array object */
+        glGenVertexArrays(1, &this.vao);
+    }
+
+    public void bind() {
+        glBindVertexArray(this.vao);
     }
 
     /* Generate & upload geometry */
     public void tesselate() 
     {
-        int pw = width+1,
-            ph = height+1;
+        this.bind();
+
+        /* Compute & upload mesh data */
+        vertexBuffer = computeVertexData();
+        normalBuffer = computeNormalData();
+        texcoordBuffer = computeTexcoordData();
+        indexBuffer  = computeElementData();
+
+        /* Position pointer */
+        vertexBuffer.bind();
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null); // Position
+
+        /* Normal pointer */
+        normalBuffer.bind();
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE,  0, null); // Normal
+
+        /* Texcoord pointer */
+        texcoordBuffer.bind();
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, null); // Texcoord
+
+        /* Enable */
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+    }
+
+    public void draw() {
+        bind();
+        indexBuffer.draw();
+    }
+
+    protected abstract GLArrayBuffer computeVertexData();
+    protected abstract GLArrayBuffer computeTexcoordData();
+    protected abstract GLArrayBuffer computeNormalData();
+    protected abstract GLElementBuffer computeElementData(); 
+}
+
+class Quad : GLArray
+{
+    private float size_x;
+    private float size_y;
+    private int width;
+    private int height;
+    private int pw;
+    private int ph;
+
+    GLArrayBuffer   texcord;
+    GLArrayBuffer   vertex;
+    GLElementBuffer index;
+
+    public this(float width, float height) {
+        this(width, height, 1, 1);
+    }
+
+    public this(float size_x, float size_y, int seg_x, int seg_y) 
+    {
+        this.width  = seg_x;
+        this.height = seg_y;
+        this.size_x = size_x;
+        this.size_y = size_y;
+
+        this.pw = width + 1;
+        this.ph = height + 1;
+    }
+
+
+    protected override GLArrayBuffer computeVertexData() 
+    {
+        int i = 0;
+        float sx = size_x / width,
+              sy = size_y / height;
 
         vec3[] points = new vec3[pw * ph];
-        vec3[] tex    = new vec2[pw * ph];
-        for (int x = 0; x < pw; x++) {
-            for (int y = 0; y < ph; y++) {
-                int i = x * ph + y;
-                points[i] = vec3(x*0.5f,y*0.5f,0);
-            }
-        }
+        for (int x = 0; x < pw; x++) 
+            for (int y = 0; y < ph; y++) 
+                points[i++] = vec3(x * sx, y * sy, 0);
 
+        auto vb = new GLArrayBuffer();
+        vb.bind();
+        vb.bufferData(points.length * 3, float.sizeof, cast(void*) points.ptr);
+        return vb;
+    }
+
+    protected override GLArrayBuffer computeNormalData() 
+    {
+        int count = pw * ph;
+        vec3[] normal = new vec3[count];
+        for(int i = 0; i < count; i++) 
+            normal[i] = vec3(0,1,0);
+
+        auto nb = new GLArrayBuffer();
+        nb.bind();
+        nb.bufferData(normal.length * 3, float.sizeof, cast(void*) normal.ptr);
+        return nb;
+    }
+
+    protected override GLArrayBuffer computeTexcoordData() 
+    {
+        int count = pw * ph,
+            i = 0;
+        float sx  = 1.0f / pw,
+              sy  = 1.0f / ph; 
+
+        vec3[] coords = new vec3[pw * ph];
+        for (int x = 0; x < pw; x++) 
+            for (int y = 0; y < ph; y++) 
+                coords[i++] = vec3(x * sx, y * sy, 0);
+
+        auto tb = new GLArrayBuffer();
+        tb.bind();
+        tb.bufferData(coords.length * 2, float.sizeof, cast(void*) coords.ptr);
+        return tb;
+    }
+
+    protected override GLElementBuffer computeElementData() 
+    {
         int i = 0;
         ushort[] idx = new ushort[width * height * 6];
         for (int x = 0; x < width; x++) {
@@ -66,46 +149,18 @@ class Quad
                 idx[i++] = cast(ushort)( x*ph + y ); // bl
                 idx[i++] = cast(ushort)((x+1)*ph + y ); // br
 
-                tri(points[idx[i-3]], points[idx[i-2]], points[idx[i-1]]);
-
                 idx[i++] = cast(ushort)( x*ph + y + 1 ); // tl 
                 idx[i++] = cast(ushort)((x+1)*ph + y ); // br
                 idx[i++] = cast(ushort)((x+1)*ph + y+1 ); // tr
-
-                tri(points[idx[i-3]], points[idx[i-2]], points[idx[i-1]]);
             }
         }
-
-        /* Create vertex array object */
-        glGenVertexArrays(1, &this.vao);
-        glBindVertexArray(this.vao);
-
-        /* Upload data */
-        auto vb = new GLArrayBuffer();
-        vb.bind();
-        vb.bufferData(points.length * 3, float.sizeof, cast(void*) points.ptr);
 
         auto ib = new GLElementBuffer(GL_UNSIGNED_SHORT);
         ib.bind();
         ib.bufferData(idx.length, ushort.sizeof, cast(void*) idx.ptr);
-
-        /* Store position pointer */
-        vb.bind();
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
-        glEnableVertexAttribArray(0);
-
-        this.vertex = vb;
-        this.index  = ib;
+        return ib;
     }
 
-    public void draw() {
-        //glBindVertexArray(this.vao);
-        this.vertex.bind();
-        this.index.bind();
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
-        glEnableVertexAttribArray(0);
-        this.index.draw();
-    }
 }
 
 class GLBuffer

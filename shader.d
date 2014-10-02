@@ -1,6 +1,7 @@
 import std.string;
 import std.file;
 import std.stdio;
+import gl3n.linalg;
 import derelict.opengl3.gl;
 
 class ShaderProgram
@@ -26,6 +27,11 @@ class ShaderProgram
 
     public void link() 
     {
+        /* Bind attribute locations */
+        glBindAttribLocation(this.id, 0, "Vertex");
+        glBindAttribLocation(this.id, 1, "Normal");
+        glBindAttribLocation(this.id, 2, "TexCoord0");
+
         glLinkProgram(this.id);
 
         int isLinked = GL_FALSE;
@@ -46,6 +52,20 @@ class ShaderProgram
         if (!this.linked)
             throw new Exception("GLSL Shader must be linked first");
         glUseProgram(this.id);
+    }
+
+    protected uint getUniformLocation(string name) 
+    {
+        auto cstr = toStringz(name);
+        uint loc = glGetUniformLocation(this.id, cstr);
+        if (loc == -1)
+            throw new Exception(format("Unknown uniform '%s'", name));
+        return loc;
+    }
+
+    public void setMatrix4(string name, mat4 mat) {
+        uint loc = getUniformLocation(name);
+        glUniformMatrix4fv(loc, 1, GL_TRUE, mat.value_ptr);
     }
 }
 

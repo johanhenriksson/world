@@ -4,6 +4,7 @@ import std.string;
 import gl3n.math;
 import gl3n.linalg;
 import derelict.sdl2.sdl;
+import derelict.sdl2.image;
 import derelict.opengl3.gl;
 
 import shader;
@@ -35,7 +36,7 @@ void main()
 
     DerelictGL.reload();
 
-    auto quad = new Quad(2, 2);
+    auto quad = new Quad(50.0f, 50.0f);
     quad.tesselate();
 
     /* Compile shader */
@@ -50,8 +51,19 @@ void main()
     program.attach(fragment);
     program.link();
 
+    program.use();
+
+    /* MVP */
+    mat4 projection = mat4.orthographic(0, 800, 0, 600, -1, 1);
+    mat4 view       = mat4.translation(-00, -00, 0);
+    mat4 model      = mat4.scaling(5,5,5).rotatez(PI / 4).translate(200, 20, 0);
+    program.setMatrix4("Projection", projection);
+    program.setMatrix4("View",       view);
+    program.setMatrix4("Model",      model);
+
     glClearColor(0.2, 0.2, 0.2, 1);
 
+    uint lastTime = SDL_GetTicks();
     auto run = true;
     while(run) 
     {
@@ -66,9 +78,11 @@ void main()
             }
         }
 
+        uint time = SDL_GetTicks();
+        float dt = (time - lastTime) / 1000.0f;
+        
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        program.use();
         quad.draw();
 
         /* Swap buffers */
