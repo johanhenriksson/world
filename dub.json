@@ -1,0 +1,14 @@
+{
+    "name": "World",
+    "description": "3D Engine",
+    "author": "Johan Henriksson",
+    "targetType": "executable",
+    "sourcePath": ".",
+
+    
+    "dependencies": {
+        "derelict-sdl2": "~>1.0.0",
+        "derelict-gl3": "*",
+        "gl3n": "*"
+    }
+}
