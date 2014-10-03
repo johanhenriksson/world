@@ -62,6 +62,69 @@ abstract class GLArray
     protected abstract GLElementBuffer computeElementData(); 
 }
 
+class IsoCube : GLArray
+{
+    protected override GLArrayBuffer computeVertexData() 
+    {
+        vec3[] points = [ 
+            vec3(0,0,-1), vec3(0,0,0), vec3(0,0,0), vec3(1,0,0), 
+            vec3(0,1,-1), vec3(0,1,0), vec3(0,1,0), vec3(1,1,0), 
+            vec3(0,1,-1), vec3(0,1,0), vec3(1,1,0), vec3(1,1,-1) 
+        ];
+
+        /* Center offset */
+        for(auto i = 0; i < points.length; i++) 
+            points[i] = points[i] - vec3(0.5f, 0.5f, 0.5f);
+
+        auto vb = new GLArrayBuffer();
+        vb.bind();
+        vb.bufferData(points.length * 3, float.sizeof, cast(void*) points.ptr);
+        return vb;
+    }
+
+    protected override GLArrayBuffer computeNormalData() 
+    {
+        vec3[] normal = [ 
+            vec3(-1,0,0), vec3(-1,0,0), vec3(0,0,-1), vec3(0,0,-1), 
+            vec3(-1,0,0), vec3(-1,0,0), vec3(0,0,-1), vec3(0,0,-1), 
+            vec3(0,1,0),  vec3(0,1,0),  vec3(0,1,0),  vec3(0,1,0),
+        ];
+
+        auto nb = new GLArrayBuffer();
+        nb.bind();
+        nb.bufferData(normal.length * 3, float.sizeof, cast(void*) normal.ptr);
+        return nb;
+    }
+
+    protected override GLArrayBuffer computeTexcoordData() 
+    {
+        vec2[] coords = [
+            vec2(0,0), vec2(1,0), vec2(0,0), vec2(1,0),
+            vec2(0,1), vec2(1,1), vec2(0,1), vec2(1,1),
+            vec2(0,1), vec2(0,0), vec2(1,0), vec2(1,1),
+        ];
+
+        auto tb = new GLArrayBuffer();
+        tb.bind();
+        tb.bufferData(coords.length * 2, float.sizeof, cast(void*) coords.ptr);
+        return tb;
+    }
+
+    protected override GLElementBuffer computeElementData() 
+    {
+        ushort[] idx = [
+            11, 8, 9, 11, 9, 10, // Top Left, Right
+            4,  1, 5, 4,  0, 1,  // Left Top, Bottom
+            6,  2, 7, 7,  2, 3,  // Right Top, Bottom
+        ];
+
+        auto ib = new GLElementBuffer(GL_UNSIGNED_SHORT);
+        ib.bind();
+        ib.bufferData(idx.length, ushort.sizeof, cast(void*) idx.ptr);
+        return ib;
+    }
+}
+
 class Quad : GLArray
 {
     private float size_x;
@@ -95,12 +158,14 @@ class Quad : GLArray
     {
         int i = 0;
         float sx = size_x / width,
-              sy = size_y / height;
+              sy = size_y / height,
+              half_w = size_x / 2.0f,
+              half_h = size_y / 2.0f;
 
         vec3[] points = new vec3[pw * ph];
         for (int x = 0; x < pw; x++) 
             for (int y = 0; y < ph; y++) 
-                points[i++] = vec3(x * sx, y * sy, 0);
+                points[i++] = vec3(x * sx - half_w, y * sy - half_h, 0);
 
         auto vb = new GLArrayBuffer();
         vb.bind();

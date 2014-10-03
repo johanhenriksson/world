@@ -16,5 +16,5 @@ void main(void)
     worldNormal = Normal;
     uv = TexCoord0;
 
-    gl_Position = Projection * View * Model * vec4(Vertex, 1);
+    gl_Position = (Projection * (View * Model)) * vec4(Vertex, 1);
 }

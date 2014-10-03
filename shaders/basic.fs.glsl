@@ -5,5 +5,5 @@ in vec3 worldNormal;
 
 void main(void)
 {
-    gl_FragColor = vec4(uv, 0.0, 1.0);
+    gl_FragColor = vec4(abs(worldNormal), 1.0);
 }
