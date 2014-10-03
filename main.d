@@ -131,10 +131,15 @@ class World
         auto camera = new Transform();
         //camera.Position = vec3(-0,-0, 2);
 
+        auto iso_root = mat4.identity
+                            .rotatey(45 * 3.1415f / 180)
+                            .rotatex(30 * 3.1415f / 180);
+
         auto model = mat4.identity
                          .rotatey(45 * 3.1415f / 180)
                          .rotatex(30 * 3.1415f / 180);
-        auto model2 = model * mat4.translation(1,0,0);
+        auto model2 = iso_root * mat4.translation(1,0,0);
+        auto model3 = iso_root * mat4.translation(0,-1,0);
 
         vec3 position = vec3(4, 3, 4);
         auto view = mat4.identity.translate(position.x, position.y, position.z);
@@ -214,6 +219,10 @@ class World
             cube.draw();
 
             program.setMatrix4("Model", model2);
+            cube.draw();
+
+
+            program.setMatrix4("Model", model3);
             cube.draw();
 
             /* Swap buffers */
