@@ -9,6 +9,7 @@ import derelict.opengl3.gl;
 
 import shader;
 import geometry;
+import material;
 
 pragma(lib, "libSDL2-2.0.so");
 
@@ -116,20 +117,8 @@ class World
 
     public void run() 
     {
-        auto quad = new Quad(50.0f, 50.0f);
-        quad.tesselate();
-
         auto cube = new IsoCube();
         cube.tesselate();
-
-        auto trans = new Transform();
-        trans.Scale = vec3(2,2,2);
-        trans.Position = vec3(2, 2, 0);
-        trans.RotateX(35);
-        //trans.RotateY(45);
-
-        auto camera = new Transform();
-        //camera.Position = vec3(-0,-0, 2);
 
         auto iso_root = mat4.identity
                             .rotatey(45 * 3.1415f / 180)
@@ -159,6 +148,7 @@ class World
         program.use();
 
         glEnable(GL_DEPTH_TEST);
+
         /* MVP */
         mat4 projection = mat4.orthographic(0, 8, 0, 6, -10000, 10000);
         program.setMatrix4("Projection", projection);
@@ -169,6 +159,12 @@ class World
         bool mouse = false;
 
         uint lastTime = SDL_GetTicks();
+
+        auto material = new Material(program);
+        material.Diffuse = new Texture("rock.jpg");
+        material.use();
+
+        writeln(glGetError());
 
         auto run = true;
         while(run) 
@@ -201,26 +197,15 @@ class World
                 }
             }
 
-
-            //r += dt * PI / 8;
-            
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-
-            //trans.Rotation = vec3(0, 0, r);
-
-            if (mouse) {
-            }
 
             program.setMatrix4("View", view);
 
-            //quad.draw();
             program.setMatrix4("Model", model);
             cube.draw();
 
             program.setMatrix4("Model", model2);
             cube.draw();
-
 
             program.setMatrix4("Model", model3);
             cube.draw();
@@ -235,6 +220,7 @@ void main()
 {
     DerelictGL.load();
     DerelictSDL2.load();
+    DerelictSDL2Image.load();
 
     SDL_Init(SDL_INIT_VIDEO);
 
