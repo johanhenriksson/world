@@ -109,6 +109,8 @@ class World
 
         uint lastTime = SDL_GetTicks();
 
+        writeln(glGetError());
+
         auto material = new Material(program);
         material.Diffuse = new Texture("rock.jpg");
         material.use();
@@ -117,36 +119,6 @@ class World
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-        TTF_Font* font = TTF_OpenFont("ubuntu_mono.ttf", 20);
-        if (!font)
-            throw new Exception("Could not open font");
-
-        SDL_Color color = { 255, 0, 0, 255 };
-        auto surface = TTF_RenderText_Blended(font, "Hello", color);
-        ubyte colors = surface.format.BytesPerPixel;
-        int texture_format;
-        if (colors == 4) {   // alpha
-            if (surface.format.Rmask == 0x000000ff)
-                texture_format = GL_RGBA;
-            else
-                texture_format = GL_BGRA;
-        } else {             // no alpha
-            if (surface.format.Rmask == 0x000000ff)
-                texture_format = GL_RGB;
-            else
-                texture_format = GL_BGR;
-        }
-        SDL_SaveBMP(surface, "text.bmp");
-        IMG_SavePNG(surface, "text.png");
-        /*
-        uint texture;
-        glGenTextures(1, &texture);
-        glBindTexture(GL_TEXTURE_2D, texture);
-        
-        glTexImage2D(GL_TEXTURE_2D, 0, colors, surface.w, surface.h, 0, texture_format, GL_UNSIGNED_BYTE, surface.pixels);
-        */
-        SDL_FreeSurface(surface);
 
         auto run = true;
         while(run) 
@@ -186,8 +158,8 @@ class World
             //program.setVec3("CameraPos", position);
             program.setVec3("LightPos", vec3(-1,3,-1));
 
-            program.setMatrix4("Model", plane_transform);
-            plane.draw();
+            //program.setMatrix4("Model", plane_transform);
+            //plane.draw();
 
             program.setMatrix4("Model", model);
             cube.draw();

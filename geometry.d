@@ -192,8 +192,8 @@ class Quad : GLArray
     {
         int count = pw * ph,
             i = 0;
-        float sx  = 1.0f / height,
-              sy  = 1.0f / width; 
+        float sx  = 1.0f / ph,
+              sy  = 1.0f / ph; 
 
         vec3[] coords = new vec3[pw * ph];
         for (int x = 0; x < pw; x++) 
