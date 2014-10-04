@@ -67,6 +67,11 @@ class ShaderProgram
         uint loc = getUniformLocation(name);
         glUniformMatrix4fv(loc, 1, GL_TRUE, mat.value_ptr);
     }
+
+    public void setVec3(string name, vec3 vec) {
+        uint loc = getUniformLocation(name);
+        glUniform3fv(loc, 3, vec.value_ptr);
+    }
 }
 
 class Shader

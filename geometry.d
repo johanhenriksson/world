@@ -164,8 +164,10 @@ class Quad : GLArray
 
         vec3[] points = new vec3[pw * ph];
         for (int x = 0; x < pw; x++) 
-            for (int y = 0; y < ph; y++) 
-                points[i++] = vec3(x * sx - half_w, y * sy - half_h, 0);
+            for (int y = 0; y < ph; y++) {
+                points[i++] = vec3(x * sx, y * sy, 0);
+                writefln("vx %d - x: %f y: %f", i-1, x*sx, y*sy);
+            }
 
         auto vb = new GLArrayBuffer();
         vb.bind();
@@ -190,13 +192,15 @@ class Quad : GLArray
     {
         int count = pw * ph,
             i = 0;
-        float sx  = 1.0f / pw,
-              sy  = 1.0f / ph; 
+        float sx  = 1.0f / height,
+              sy  = 1.0f / width; 
 
         vec3[] coords = new vec3[pw * ph];
         for (int x = 0; x < pw; x++) 
-            for (int y = 0; y < ph; y++) 
+            for (int y = 0; y < ph; y++) {
                 coords[i++] = vec3(x * sx, y * sy, 0);
+                writefln("tx %d - x: %f y: %f", i-1, x*sx, y*sy);
+            }
 
         auto tb = new GLArrayBuffer();
         tb.bind();

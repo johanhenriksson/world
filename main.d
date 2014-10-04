@@ -5,84 +5,16 @@ import gl3n.math;
 import gl3n.linalg;
 import derelict.sdl2.sdl;
 import derelict.sdl2.image;
+import derelict.sdl2.ttf;
 import derelict.opengl3.gl;
+import derelict.util.exception;
 
 import shader;
 import geometry;
 import material;
+import transform;
 
 pragma(lib, "libSDL2-2.0.so");
-
-class Transform 
-{
-    @property mat4 Model()    { return transform; }
-    @property vec3 Position() { return position; }
-    @property vec3 Scale()    { return scale; }
-
-    @property vec3 Scale(vec3 value) {
-        scale = value;
-        recalculate();
-        return scale;
-    }
-
-    @property vec3 Position(vec3 value) {
-        position = value;
-        recalculate();
-        return position;
-    }
-
-    @property vec3 Rotation(vec3 value) {
-        rotation = value;
-        recalculate();
-        return rotation;
-    }
-
-    @property vec3 Angle() {
-        return rotation * (180.0f / 3.14159f);
-    }
-
-    @property vec3 Angle(vec3 value) {
-        rotation = value * (3.14159f / 180.0f);
-        recalculate();
-        return value;
-    }
-
-    private mat4 transform;
-    private vec3 position;
-    private vec3 rotation;
-    private vec3 scale;
-    private quat rot;
-
-    private Transform parent;
-    private Transform[] nodes;
-
-    public this() {
-        position = vec3(0,0,0);
-        rotation = vec3(0,0,0);
-        scale    = vec3(1,1,1);
-        rot      = quat.identity;
-        recalculate();
-    }
-
-    public void RotateX(float degrees) {
-        rot.rotatex(degrees * 3.1415f / 180.0f);
-        recalculate();
-    }
-
-    public void RotateY(float degrees) {
-        rot.rotatey(degrees * 3.1415f / 180.0f);
-        recalculate();
-    }
-
-    private void recalculate() 
-    {
-        auto mat = mat4.scaling(scale.x, scale.y, scale.z); // Scale
-        mat = rot.to_matrix!(4,4) * mat; // Rotate 
-        mat = mat.translate(position.x, position.y, position.z); // Translate
-
-        this.transform = mat;
-    }
-}
 
 class World
 {
@@ -113,6 +45,16 @@ class World
         context = SDL_GL_CreateContext(window);
 
         DerelictGL.reload();
+
+        TTF_Init();
+    }
+    
+    public mat4 IsometricPerspective(float x, float y, float z) 
+    {
+        return mat4.identity
+                   .rotatey(45 * 3.1415f / 180)
+                   .rotatex(35 * 3.1415f / 180)
+                   .translate(x, y, z);
     }
 
     public void run() 
@@ -120,18 +62,25 @@ class World
         auto cube = new IsoCube();
         cube.tesselate();
 
-        auto iso_root = mat4.identity
-                            .rotatey(45 * 3.1415f / 180)
-                            .rotatex(30 * 3.1415f / 180);
+        auto plane = new Quad(5,5);
+        plane.tesselate();
 
-        auto model = mat4.identity
-                         .rotatey(45 * 3.1415f / 180)
-                         .rotatex(30 * 3.1415f / 180);
+        auto iso_root = mat4.identity;
+                            //.rotatey(45 * 3.1415f / 180)
+                            //.rotatex(30 * 3.1415f / 180);
+
+        auto model = mat4.identity;
+                         //.rotatey(45 * 3.1415f / 180) .rotatex(30 * 3.1415f / 180);
         auto model2 = iso_root * mat4.translation(1,0,0);
         auto model3 = iso_root * mat4.translation(0,-1,0);
 
+        auto plane_transform = mat4.identity
+                                   .rotatex(-3.1415f / 2)
+                                   .translate(0,-2,0);
+
         vec3 position = vec3(4, 3, 4);
-        auto view = mat4.identity.translate(position.x, position.y, position.z);
+        /* isometric view */
+        auto view = IsometricPerspective(position.x, position.y, position.z);
 
         /* Compile shader */
         auto program  = new ShaderProgram();
@@ -166,6 +115,39 @@ class World
 
         writeln(glGetError());
 
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        TTF_Font* font = TTF_OpenFont("ubuntu_mono.ttf", 20);
+        if (!font)
+            throw new Exception("Could not open font");
+
+        SDL_Color color = { 255, 0, 0, 255 };
+        auto surface = TTF_RenderText_Blended(font, "Hello", color);
+        ubyte colors = surface.format.BytesPerPixel;
+        int texture_format;
+        if (colors == 4) {   // alpha
+            if (surface.format.Rmask == 0x000000ff)
+                texture_format = GL_RGBA;
+            else
+                texture_format = GL_BGRA;
+        } else {             // no alpha
+            if (surface.format.Rmask == 0x000000ff)
+                texture_format = GL_RGB;
+            else
+                texture_format = GL_BGR;
+        }
+        SDL_SaveBMP(surface, "text.bmp");
+        IMG_SavePNG(surface, "text.png");
+        /*
+        uint texture;
+        glGenTextures(1, &texture);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        
+        glTexImage2D(GL_TEXTURE_2D, 0, colors, surface.w, surface.h, 0, texture_format, GL_UNSIGNED_BYTE, surface.pixels);
+        */
+        SDL_FreeSurface(surface);
+
         auto run = true;
         while(run) 
         {
@@ -189,7 +171,7 @@ class World
                         if (mouse) {
                             auto p = vec3(event.motion.xrel, -event.motion.yrel, 0);
                             position = position + p * 5 * dt;
-                            view = mat4.translation(position.x, position.y, position.z);
+                            view = IsometricPerspective(position.x, position.y, position.z);
                         }
                         break;
                     default: 
@@ -198,8 +180,14 @@ class World
             }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
             program.setMatrix4("View", view);
+            //program.setVec3("CameraPos", position);
+            program.setVec3("LightPos", vec3(-1,3,-1));
+
+            program.setMatrix4("Model", plane_transform);
+            plane.draw();
 
             program.setMatrix4("Model", model);
             cube.draw();
@@ -221,6 +209,12 @@ void main()
     DerelictGL.load();
     DerelictSDL2.load();
     DerelictSDL2Image.load();
+    try {
+        DerelictSDL2ttf.load();
+    }
+    catch(SymbolLoadException ex) {
+        writefln("Cannot find symbol %s", ex.msg); 
+    }
 
     SDL_Init(SDL_INIT_VIDEO);
 
