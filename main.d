@@ -13,6 +13,7 @@ import shader;
 import geometry;
 import material;
 import transform;
+import ui;
 
 pragma(lib, "libSDL2-2.0.so");
 
@@ -43,8 +44,18 @@ class World
 
         /* Create OpenGL Context */
         context = SDL_GL_CreateContext(window);
+        if (!context)
+            throw new Exception("Could not create OpenGL window " ~ to!string(SDL_GetError()));
 
         DerelictGL.reload();
+
+        /* OpenGL Settings */
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glClearColor(0.2, 0.2, 0.2, 1);
+
+        glPolygonMode(GL_BACK, GL_LINE); /* Draw backfacing as wireframe */
 
         TTF_Init();
     }
@@ -65,44 +76,24 @@ class World
         auto plane = new Quad(5,5);
         plane.tesselate();
 
-        auto iso_root = mat4.identity;
-                            //.rotatey(45 * 3.1415f / 180)
-                            //.rotatex(30 * 3.1415f / 180);
-
         auto model = mat4.identity;
-                         //.rotatey(45 * 3.1415f / 180) .rotatex(30 * 3.1415f / 180);
-        auto model2 = iso_root * mat4.translation(1,0,0);
-        auto model3 = iso_root * mat4.translation(0,-1,0);
+        auto model2 = mat4.translation(1,0,0);
+        auto model3 = mat4.translation(0,-1,0);
 
-        auto plane_transform = mat4.identity
-                                   .rotatex(-3.1415f / 2)
-                                   .translate(0,-2,0);
 
         vec3 position = vec3(4, 3, 4);
         /* isometric view */
         auto view = IsometricPerspective(position.x, position.y, position.z);
 
         /* Compile shader */
-        auto program  = new ShaderProgram();
-        auto vertex   = new VertexShader("shaders/basic.vs.glsl");
-        auto fragment = new FragmentShader("shaders/basic.fs.glsl");
-
-        vertex.compile();
-        fragment.compile();
-
-        program.attach(vertex);
-        program.attach(fragment);
-        program.link();
-
+        auto program = Shader.Create("basic");
         program.use();
-
-        glEnable(GL_DEPTH_TEST);
 
         /* MVP */
         mat4 projection = mat4.orthographic(0, 8, 0, 6, -10000, 10000);
         program.setMatrix4("Projection", projection);
 
-        glClearColor(0.2, 0.2, 0.2, 1);
+        auto ui = new UIManager();
 
         float r = 45.0f;
         bool mouse = false;
@@ -116,9 +107,6 @@ class World
         material.use();
 
         writeln(glGetError());
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         auto run = true;
         while(run) 
@@ -152,13 +140,11 @@ class World
             }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            //glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 
             program.setMatrix4("View", view);
             //program.setVec3("CameraPos", position);
-            program.setVec3("LightPos", vec3(-1,3,-1));
+            program.setVec3("LightPos", vec3(0,3,0));
 
-            //program.setMatrix4("Model", plane_transform);
             //plane.draw();
 
             program.setMatrix4("Model", model);
@@ -188,8 +174,9 @@ void main()
         writefln("Cannot find symbol %s", ex.msg); 
     }
 
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_EVERYTHING);
 
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 

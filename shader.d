@@ -4,7 +4,7 @@ import std.stdio;
 import gl3n.linalg;
 import derelict.opengl3.gl;
 
-class ShaderProgram
+class Shader
 {
     private uint id;
     private bool linked;
@@ -17,12 +17,12 @@ class ShaderProgram
         return this.id;
     }
 
-    public void attach(Shader shader) 
+    public void attach(ShaderProgram program) 
     {
-        if (!shader.isCompiled())
-            throw new Exception("Shader must be compiled first");
+        if (!program.isCompiled())
+            throw new Exception("Shader program must be compiled first");
 
-        glAttachShader(this.id, shader.getId());
+        glAttachShader(this.id, program.getId());
     } 
 
     public void link() 
@@ -72,9 +72,25 @@ class ShaderProgram
         uint loc = getUniformLocation(name);
         glUniform3fv(loc, 3, vec.value_ptr);
     }
+
+    /** Factory method */
+    public static Shader Create(string shaderName) 
+    {
+        auto shader   = new Shader();
+        auto vertex   = new VertexShader(format("shaders/%s.vs.glsl", shaderName));
+        auto fragment = new FragmentShader(format("shaders/%s.fs.glsl", shaderName));
+
+        vertex.compile();
+        fragment.compile();
+
+        shader.attach(vertex);
+        shader.attach(fragment);
+        shader.link();
+        return shader;
+    }
 }
 
-class Shader
+class ShaderProgram
 {
     uint id;
     uint type;
@@ -120,13 +136,13 @@ class Shader
     }   
 }
 
-class VertexShader : Shader {
+class VertexShader : ShaderProgram {
     this(string sourcePath) {
         super(GL_VERTEX_SHADER, sourcePath);
     }
 }
 
-class FragmentShader : Shader {
+class FragmentShader : ShaderProgram {
     this(string sourcePath) {
         super(GL_FRAGMENT_SHADER, sourcePath);
     }

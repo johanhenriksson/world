@@ -142,19 +142,17 @@ class Font
 
 class Material
 {
-    @property ShaderProgram Shader() { return shader; }
-
     @property Texture Diffuse() { return diffuse; }
     @property Texture Diffuse(Texture value) { return diffuse = value; }
 
-    private ShaderProgram shader;
+    private Shader shader;
     
     /* Texture maps */
     private Texture diffuse;
     private Texture normal;
     private Texture specular;
 
-    public this(ShaderProgram shader) {
+    public this(Shader shader) {
         this.shader = shader;
     }
 

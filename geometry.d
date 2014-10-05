@@ -8,14 +8,18 @@ abstract class GLArray
 {
     private uint vao;
 
-    private GLArrayBuffer vertexBuffer;
-    private GLArrayBuffer normalBuffer;
-    private GLArrayBuffer texcoordBuffer;
-    private GLElementBuffer indexBuffer;
+    protected GLArrayBuffer vertexBuffer;
+    protected GLArrayBuffer normalBuffer;
+    protected GLArrayBuffer texcoordBuffer;
+    protected GLElementBuffer indexBuffer;
 
     public this() {
         /* Create vertex array object */
         glGenVertexArrays(1, &this.vao);
+    }
+
+    public uint getId() {  
+        return this.vao; 
     }
 
     public void bind() {
@@ -257,6 +261,7 @@ class GLBuffer
             size,
             elements * size
         ));
+        this.bind();
         glBufferData(this.type, elements * size, ptr, this.storageType);
     }
 }
