@@ -104,8 +104,8 @@ class World
 
         auto material = new Material(program);
         material.Diffuse = new Texture("rock.jpg");
-        material.use();
 
+        writeln("about to run loop");
         writeln(glGetError());
 
         auto run = true;
@@ -141,6 +141,7 @@ class World
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            material.use();
             program.setMatrix4("View", view);
             //program.setVec3("CameraPos", position);
             program.setVec3("LightPos", vec3(0,3,0));
@@ -155,6 +156,8 @@ class World
 
             program.setMatrix4("Model", model3);
             cube.draw();
+
+            ui.draw();
 
             /* Swap buffers */
             SDL_GL_SwapWindow(window);

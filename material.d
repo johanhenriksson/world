@@ -158,6 +158,7 @@ class Material
 
     public void use() 
     {
+        shader.use();
         /* Diffuse */
         glActiveTexture(GL_TEXTURE0);
         diffuse.bind();
