@@ -63,6 +63,11 @@ class Shader
         return loc;
     }
 
+    public void setInt(string name, int value) {
+        uint loc = getUniformLocation(name);
+        glUniform1i(loc, value);
+    }
+
     public void setMatrix4(string name, mat4 mat) {
         uint loc = getUniformLocation(name);
         glUniformMatrix4fv(loc, 1, GL_TRUE, mat.value_ptr);

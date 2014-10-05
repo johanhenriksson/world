@@ -72,11 +72,13 @@ class Texture
         this.width = surface.w;
         this.height = surface.h;
 
+        writeln("Loaded %d x %d texture", surface.w, surface.h);
+
         /* Upload texture data */
         glTexImage2D(
             GL_TEXTURE_2D, 0, GL_RGBA, 
             surface.w, surface.h, 0, 
-            GL_RGB, GL_UNSIGNED_BYTE, 
+            GL_RGBA, GL_UNSIGNED_BYTE, 
             surface.pixels
         );
 
@@ -91,20 +93,6 @@ class Texture
             throw new Exception("Could not load texture file: " ~ path);
 
         loadFromSurface(surface);
-    }
-}
-
-class TTFTexture : Texture
-{
-    @property string Text() { return text; }
-
-    protected string text;
-    protected vec4 color = vec4(1,0,0,1);
-
-    protected void refresh() {
-    }
-
-    protected void render(string text) {
     }
 }
 
@@ -157,11 +145,10 @@ class Material
 
     public void use() 
     {
-        shader.use();
         /* Diffuse */
         glActiveTexture(GL_TEXTURE0);
         diffuse.bind();
-        glUniform1i(diffuse.Id, 0);
+        shader.setInt("Texture", 0);
 
         /* Normal */
         /* Specular */

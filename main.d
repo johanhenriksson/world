@@ -150,12 +150,13 @@ class World
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            program.use();
             material.use();
             program.setMatrix4("View", view);
             //program.setVec3("CameraPos", position);
             program.setVec3("LightPos", vec3(-1,3,-1));
 
-            plane.draw();
+            //plane.draw();
 
             program.setMatrix4("Model", model);
             cube.draw();
