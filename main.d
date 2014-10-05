@@ -93,7 +93,7 @@ class World
         mat4 projection = mat4.orthographic(0, 8, 0, 6, -10000, 10000);
         program.setMatrix4("Projection", projection);
 
-        auto ui = new UIManager();
+        auto ui = new UIManager(cast(int)size.x, cast(int)size.y);
 
         float r = 45.0f;
         bool mouse = false;
@@ -117,6 +117,7 @@ class World
 
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
+                ui.processEvent(event);
                 switch(event.type) {
                     case SDL_QUIT:
                         run = false;
@@ -144,7 +145,7 @@ class World
             material.use();
             program.setMatrix4("View", view);
             //program.setVec3("CameraPos", position);
-            program.setVec3("LightPos", vec3(0,3,0));
+            program.setVec3("LightPos", vec3(-1,3,-1));
 
             //plane.draw();
 

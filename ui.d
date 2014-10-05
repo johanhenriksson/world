@@ -1,3 +1,5 @@
+import std.stdio;
+import std.string;
 import gl3n.linalg;
 import derelict.opengl3.gl;
 import derelict.sdl2.sdl;
@@ -10,10 +12,34 @@ enum MouseButton {
     Right = SDL_BUTTON_RIGHT,
 }
 
-struct MouseClickEvent {
+/* Click event struct */
+struct MouseClickEvent 
+{
     MouseButton button;
     vec2 point;
+    bool down;
     bool consumed;
+
+    this(MouseButton button, vec2 point, bool down) 
+    {
+        this.button   = button;
+        this.point    = point;
+        this.down     = down;
+        this.consumed = false;
+    }
+}
+
+/* Mouse Move struct */
+struct MouseMoveEvent
+{
+    vec2 point;
+    bool consumed;
+
+    public this(vec2 point) 
+    {
+        this.point = point;
+        this.consumed = false;
+    }
 }
 
 class UIElement
@@ -21,9 +47,28 @@ class UIElement
     @property vec2 Size() { return size; }
     @property vec3 Position() { return position; }
 
+    @property vec2 Size(vec2 value) { return size = value; }
+    @property vec3 Position(vec3 value) {
+        position = value;
+        refresh();
+        return position;
+    }
+
     protected vec2 size;
     protected vec3 position;
+    protected mat4 transform;
     protected UIElement[] children;
+
+    public this(vec3 position, vec2 size) 
+    {
+        this.position = position;
+        this.size = size;
+        refresh();
+    }
+
+    public void refresh() {
+        transform = mat4.translation(position.x, position.y, position.z);
+    }
 
     /* Returns true if a given point is within the bounds of the element */
     public bool inside(vec2 point) 
@@ -46,6 +91,32 @@ class UIElement
             }
         }
     }
+
+    public void drawColored(Shader shader) { }
+    public void drawText(Shader shader) { }
+}
+
+class UIButton : UIElement
+{
+    protected UIQuad background;
+    protected vec4 color = vec4(0.75, 0.2, 0.2, 1.0);
+
+    public this(string text, int x, int y, int width, int height) {
+        super(vec3(x,y,0), vec2(width, height));
+
+        background = new UIQuad(this.size, this.color);
+        background.tesselate();
+    }
+
+    public override void drawColored(Shader shader) {
+        shader.setMatrix4("Transform", transform);
+        background.drawColored(shader);
+    }
+
+    public override void click(MouseClickEvent* event) {
+        writeln("button clicked!");
+        background.Color = vec4(0,0,1,1);
+    }
 }
 
 class UIManager
@@ -54,23 +125,33 @@ class UIManager
     mat4 viewport;
     Shader shader;
 
+    int width;
+    int height;
+
     /* Top-level UI elements */
     UIElement[] elements;
+    UIButton button;
 
-    public this() {
+    public this(int width, int height) 
+    {
+        this.width = width;
+        this.height = height;
         shader = Shader.Create("UIColor");
+        viewport = mat4.orthographic(0, width, 0, height, -10000, 10000);
 
-
-        viewport = mat4.orthographic(0, 800, 0, 600, -10000, 10000);
-
-        quad = new UIQuad(shader);
-        quad.tesselate();
+        button = new UIButton("hello", 100, 100, 200, 75);
+        elements = [ button ];
     }
 
-    public void draw() {
+    public void draw() 
+    {
+        /* Colored */
         shader.use();
         shader.setMatrix4("Screen", viewport);
-        quad.drawColored();
+
+        foreach(child; elements) {
+            child.drawColored(shader);
+        }
 
         /* Draw Text */
         /* textShader.use(); */
@@ -78,16 +159,34 @@ class UIManager
 
     protected void onMouseDown(SDL_Event event) 
     {
-        auto ui_event = MouseClickEvent(cast(MouseButton) event.button.button, vec2(event.button.x, event.button.y));
+        auto ui_event = MouseClickEvent(
+            cast(MouseButton) event.button.button, 
+            vec2(event.button.x, this.height - event.button.y),
+            true
+        );
+        foreach(child; elements) {
+            if (ui_event.consumed)
+                break;
+            /*
+            if (child.inside(ui_event.point))
+                child.click(&ui_event);
+            */
+        }
+    }
+
+    protected void onMouseUp(SDL_Event event) 
+    {
+        auto ui_event = MouseClickEvent(
+            cast(MouseButton) event.button.button, 
+            vec2(event.button.x, this.height - event.button.y),
+            false
+        );
         foreach(child; elements) {
             if (ui_event.consumed)
                 break;
             if (child.inside(ui_event.point))
                 child.click(&ui_event);
         }
-    }
-
-    protected void onMouseUp(SDL_Event event) {
     }
 
     public void processEvent(SDL_Event event) 
@@ -107,48 +206,39 @@ class UIManager
 
 class UIQuad : GLArray
 {
+    @property vec4 Color() { return color; }
+    @property vec2 Size()  { return size; }
+
+    @property vec4 Color(vec4 value) { return color = value; }
+    @property vec2 Size(vec2 value)  { return size  = value; }
+
     vec4 color;
-    vec3 position;
     vec2 size;
 
-    Shader shader;
-    GLArrayBuffer colorBuffer;
-
-    public this(Shader shader) 
+    public this(vec2 size, vec4 color)
     {
-        this.shader = shader;
-        color    = vec4(1, 0, 0, 1);
-        position = vec3(50, 50, 0);
-        size     = vec3(100, 100, 0);
+        this.color = color;
+        this.size = size;
+    }
+
+    public ~this() {
+        delete vertexBuffer;
     }
 
     public override void tesselate() 
     {
         /* Cast dimensions to ushort */
-        float px = position.x,
-               py = position.y,
-               pz = position.z,
-               width  = size.x,
-               height = size.y;
-
-        /* Cast float color to bytes */
-        ubyte r = cast(ubyte)( color.x * 255 ),
-              g = cast(ubyte)( color.y * 255.0f ),
-              b = cast(ubyte)( color.z * 255.0f ),
-              a = cast(ubyte)( color.w * 255.0f );
+        float width  = size.x,
+              height = size.y;
 
         float[] vertex = [
-            px + 0,      py + 0,      pz, 
-            px + 0,      py + height, pz, 
-            px + width,  py + height, pz, 
+            0,      0,      0, 
+            0,      height, 0, 
+            width,  height, 0, 
 
-            px + 0,      py + 0,      pz, 
-            px + height, py + 0,      pz, 
-            px + width,  py + height, pz, 
-        ];
-        ubyte[] colors = [
-            r, g, b, a, r, g, b, a, r, g, b, a,
-            r, g, b, a, r, g, b, a, r, g, b, a,
+            0,      0,      0, 
+            width,  0,      0, 
+            width,  height, 0, 
         ];
 
         this.bind();
@@ -157,16 +247,12 @@ class UIQuad : GLArray
         vertexBuffer.bufferData(vertex.length, float.sizeof, cast(void*) vertex.ptr);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null); // Position
 
-        colorBuffer = new GLArrayBuffer();
-        colorBuffer.bufferData(colors.length, ubyte.sizeof, cast(void*) colors.ptr);
-        glVertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE,  0, null); // Color
-
         glEnableVertexAttribArray(0);
-        glEnableVertexAttribArray(1);
     }
 
-    public void drawColored() 
+    public void drawColored(Shader shader) 
     {
+        shader.setVec4("Color", this.color);
         this.bind();
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }

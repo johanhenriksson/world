@@ -1,13 +1,10 @@
 #version 330
 uniform mat4 Screen; // Screen -> Clip
+uniform mat4 Transform;
 
 in vec3 Vertex;
-in vec4 Color;
-
-out vec4 VertexColor;
 
 void main() 
 {
-    VertexColor = Color;
-    gl_Position = Screen * vec4(Vertex, 1.0);
+    gl_Position = (Screen * Transform) * vec4(Vertex, 1.0);
 }

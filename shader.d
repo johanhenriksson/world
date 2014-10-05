@@ -70,7 +70,12 @@ class Shader
 
     public void setVec3(string name, vec3 vec) {
         uint loc = getUniformLocation(name);
-        glUniform3fv(loc, 3, vec.value_ptr);
+        glUniform3fv(loc, 1, vec.value_ptr);
+    }
+    
+    public void setVec4(string name, vec4 vec) {
+        uint loc = getUniformLocation(name);
+        glUniform4fv(loc, 1, vec.value_ptr);
     }
 
     /** Factory method */
