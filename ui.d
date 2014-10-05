@@ -5,7 +5,9 @@ import derelict.opengl3.gl;
 import derelict.sdl2.sdl;
 
 import geometry;
+import transform;
 import shader;
+import material;
 
 enum MouseButton {
     Left = SDL_BUTTON_LEFT,
@@ -44,35 +46,28 @@ struct MouseMoveEvent
 
 class UIElement
 {
-    @property vec2 Size() { return size; }
-    @property vec3 Position() { return position; }
+    @property Transform2D Transform() { return transform; }
 
-    @property vec2 Size(vec2 value) { return size = value; }
-    @property vec3 Position(vec3 value) {
-        position = value;
-        refresh();
-        return position;
-    }
-
+    protected Transform2D transform;
     protected vec2 size;
-    protected vec3 position;
-    protected mat4 transform;
+
     protected UIElement[] children;
 
     public this(vec3 position, vec2 size) 
     {
-        this.position = position;
+        this.transform = new Transform2D(position.xy);
         this.size = size;
-        refresh();
     }
 
-    public void refresh() {
-        transform = mat4.translation(position.x, position.y, position.z);
+    public void attach(UIElement child) {
+        child.Transform.Parent = transform;
+        children ~= child;
     }
 
     /* Returns true if a given point is within the bounds of the element */
     public bool inside(vec2 point) 
     {
+        auto position = transform.Position;
         if (point.x > position.x && point.x < position.x + size.x &&
             point.y > position.y && point.y < position.y + size.y) {
             return true;
@@ -92,38 +87,69 @@ class UIElement
         }
     }
 
-    public void drawColored(Shader shader) { }
-    public void drawText(Shader shader) { }
+    public void drawColored(Shader shader) { 
+        foreach(child; children) 
+            child.drawColored(shader);
+    }
+
+    public void drawTextured(Shader shader) { 
+        foreach(child; children) 
+            child.drawTextured(shader);
+    }
 }
 
 class UIButton : UIElement
 {
-    protected UIQuad background;
-    protected vec4 color = vec4(0.75, 0.2, 0.2, 1.0);
+    @property vec4 Color() { return background.Color; } 
+    @property vec4 Color(vec4 value) { return background.Color = value; }
 
-    public this(string text, int x, int y, int width, int height) {
+    protected UIQuad background;
+    protected UITexture texture;
+
+    public this(string text, int x, int y, int width, int height, vec4 color) {
         super(vec3(x,y,0), vec2(width, height));
 
-        background = new UIQuad(this.size, this.color);
+        background = new UIQuad(this.size, color);
         background.tesselate();
+
+        if (UIFONT is null)
+            throw new Exception("No ui font");
+        Texture str_texture = UIFONT.Render(text, vec4(1,1,1,1));
+        texture = new UITexture(str_texture);
+        texture.tesselate();
+        writeln("this seems to work");
     }
 
     public override void drawColored(Shader shader) {
-        shader.setMatrix4("Transform", transform);
-        background.drawColored(shader);
+        shader.setMatrix4("Transform", transform.Matrix);
+        //background.drawColored(shader);
     }
 
-    public override void click(MouseClickEvent* event) {
+    public override void drawTextured(Shader shader) {
+        shader.setMatrix4("Transform", transform.Matrix);
+        texture.drawTextured(shader);
+    }
+
+    public override void click(MouseClickEvent* event) 
+    {
+        /* Buttons arent really supposed to have children */
+        super.click(event);
+        if (event.consumed)
+            return;
+
         writeln("button clicked!");
         background.Color = vec4(0,0,1,1);
     }
 }
 
+static Font UIFONT;
+
 class UIManager
 {
     UIQuad quad;
     mat4 viewport;
-    Shader shader;
+    Shader colorShader;
+    Shader textureShader;
 
     int width;
     int height;
@@ -134,27 +160,36 @@ class UIManager
 
     public this(int width, int height) 
     {
+        UIFONT = new Font("ubuntu_mono.ttf", 12);
+
         this.width = width;
         this.height = height;
-        shader = Shader.Create("UIColor");
+        colorShader = Shader.Create("UIColor");
+        textureShader = Shader.Create("UITexture");
+
         viewport = mat4.orthographic(0, width, 0, height, -10000, 10000);
 
-        button = new UIButton("hello", 100, 100, 200, 75);
+        button = new UIButton("hello", 100, 100, 200, 75, vec4(1,0,0,0.5));
         elements = [ button ];
     }
 
     public void draw() 
     {
-        /* Colored */
-        shader.use();
-        shader.setMatrix4("Screen", viewport);
+        glClear(GL_DEPTH_BUFFER_BIT);
 
-        foreach(child; elements) {
-            child.drawColored(shader);
-        }
+        /* Colored */
+        colorShader.use();
+        colorShader.setMatrix4("Screen", viewport);
+        foreach(child; elements) 
+            child.drawColored(colorShader);
+
+        glClear(GL_DEPTH_BUFFER_BIT);
 
         /* Draw Text */
-        /* textShader.use(); */
+        textureShader.use(); 
+        textureShader.setMatrix4("Screen", viewport);
+        foreach(child; elements) 
+            child.drawTextured(textureShader);
     }
 
     protected void onMouseDown(SDL_Event event) 
@@ -253,6 +288,75 @@ class UIQuad : GLArray
     public void drawColored(Shader shader) 
     {
         shader.setVec4("Color", this.color);
+        this.bind();
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    }
+
+    protected override GLArrayBuffer computeVertexData() { return null; }
+    protected override GLArrayBuffer computeTexcoordData() { return null; }
+    protected override GLArrayBuffer computeNormalData() { return null; }
+    protected override GLElementBuffer computeElementData() { return null; }
+}
+
+class UITexture : GLArray
+{
+    private Texture texture;
+    private vec2 size;
+
+    public this(Texture texture, int width, int height) {
+        this.texture = texture;
+        this.size = vec2(width, height);
+    }
+
+    public this(Texture texture) { this(texture, texture.Width, texture.Height); }
+
+    public override void tesselate() 
+    {
+        /* Cast dimensions to ushort */
+        float width  = size.x,
+              height = size.y;
+
+        float[] vertex = [
+            0,      0,      0, 
+            0,      height, 0, 
+            width,  height, 0, 
+
+            0,      0,      0, 
+            width,  0,      0, 
+            width,  height, 0, 
+        ];
+
+        float[] texcoord = [
+            0, 0,
+            0, 1,
+            1, 1,
+
+            0, 0,
+            1, 0,
+            1, 1,
+        ];
+
+        this.bind();
+
+        vertexBuffer = new GLArrayBuffer();
+        vertexBuffer.bufferData(vertex.length, float.sizeof, cast(void*) vertex.ptr);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null); // Position
+
+        texcoordBuffer = new GLArrayBuffer();
+        texcoordBuffer.bufferData(texcoord.length, float.sizeof, cast(void*) texcoord.ptr);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, null); // Position
+
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+    }
+
+    public void drawTextured(Shader shader) 
+    {
+
+        glActiveTexture(GL_TEXTURE0);
+        texture.bind();
+        glUniform1i(texture.Id, 0);
+
         this.bind();
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }

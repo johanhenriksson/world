@@ -23,10 +23,14 @@ class World
     private SDL_GLContext context;
     private vec2 size;
     private float aspect;
+    private float targetFps;
+    private float targetFrameTime;
 
     public this(float width, float height) {
         this.size = vec2(width, height);
         this.aspect = width / height;
+        this.targetFps = 60.0f;
+        this.targetFrameTime = 1 / targetFps;
     }
 
     public void init() 
@@ -53,9 +57,10 @@ class World
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        //glDepthFunc(GL_LEQUAL);
         glClearColor(0.2, 0.2, 0.2, 1);
 
-        glPolygonMode(GL_BACK, GL_LINE); /* Draw backfacing as wireframe */
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); /* Draw backfacing as wireframe */
 
         TTF_Init();
     }
@@ -95,6 +100,8 @@ class World
 
         auto ui = new UIManager(cast(int)size.x, cast(int)size.y);
 
+        writeln("UI manager created");
+
         float r = 45.0f;
         bool mouse = false;
 
@@ -103,6 +110,7 @@ class World
         writeln(glGetError());
 
         auto material = new Material(program);
+        writeln("setting diffuse?");
         material.Diffuse = new Texture("rock.jpg");
 
         writeln("about to run loop");
@@ -147,7 +155,7 @@ class World
             //program.setVec3("CameraPos", position);
             program.setVec3("LightPos", vec3(-1,3,-1));
 
-            //plane.draw();
+            plane.draw();
 
             program.setMatrix4("Model", model);
             cube.draw();
@@ -158,10 +166,17 @@ class World
             program.setMatrix4("Model", model3);
             cube.draw();
 
+            /* Clear depth buffer before drawing UI */
+
             ui.draw();
 
             /* Swap buffers */
             SDL_GL_SwapWindow(window);
+
+            /* Delay to target fps */
+            float delay = targetFrameTime - dt;
+            if (delay > 0)
+                SDL_Delay(cast(uint)( delay * 1000 ));
         }
     }
 }

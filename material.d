@@ -20,8 +20,8 @@ class Texture
     int height;
 
     /* GL Settings */
-    uint minifyFilter = GL_LINEAR;
-    uint magnifyFilter = GL_LINEAR;
+    uint minifyFilter = GL_NEAREST;
+    uint magnifyFilter = GL_NEAREST;
     int mipMinLevel = 0;
     int mipMaxLevel = 4;
 
@@ -30,8 +30,10 @@ class Texture
         glGenTextures(1, &id);
 
         /* Texture Parameters */
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minifyFilter); 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnifyFilter); 
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minifyFilter); 
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magnifyFilter); 
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
         width = 0;
         height = 0;
@@ -50,7 +52,6 @@ class Texture
     /* Destructor */
     public ~this() {
         /* Free GPU memory */
-        glDeleteTextures(1, &this.id);
     }
 
     public void bind() {
@@ -90,7 +91,6 @@ class Texture
             throw new Exception("Could not load texture file: " ~ path);
 
         loadFromSurface(surface);
-        SDL_FreeSurface(surface);
     }
 }
 
@@ -135,7 +135,6 @@ class Font
         /* Render to texture */
         auto surface = TTF_RenderText_Blended(ttf_font, cstr, sdl_color);
         auto texture = new Texture(surface);
-        SDL_FreeSurface(surface);
         return texture;
     }
 }
