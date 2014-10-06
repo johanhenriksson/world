@@ -71,9 +71,9 @@ class IsoCube : GLArray
     protected override GLArrayBuffer computeVertexData() 
     {
         vec3[] points = [ 
-            vec3(0,0,-1), vec3(0,0,0), vec3(0,0,0), vec3(1,0,0), 
-            vec3(0,1,-1), vec3(0,1,0), vec3(0,1,0), vec3(1,1,0), 
-            vec3(0,1,-1), vec3(0,1,0), vec3(1,1,0), vec3(1,1,-1) 
+            vec3(1,0,0), vec3(0,0,0), vec3(0,0,0), vec3(0,0,1), 
+            vec3(1,1,0), vec3(0,1,0), vec3(0,1,0), vec3(0,1,1), 
+            vec3(1,1,0), vec3(0,1,0), vec3(0,1,1), vec3(1,1,1) 
         ];
 
         /* Center offset */
@@ -134,45 +134,43 @@ class IsoCube : GLArray
 class Quad : GLArray
 {
     private float size_x;
-    private float size_y;
-    private int width;
-    private int height;
-    private int pw;
-    private int ph;
+    private float size_z;
+    private int seg_x;
+    private int seg_z;
+    private int px;
+    private int pz;
 
     GLArrayBuffer   texcord;
     GLArrayBuffer   vertex;
     GLElementBuffer index;
 
-    public this(float width, float height) {
-        this(width, height, 1, 1);
+    public this(float size_x, float size_z) {
+        this(size_x, size_z, 1, 1);
     }
 
-    public this(float size_x, float size_y, int seg_x, int seg_y) 
+    public this(float size_x, float size_z, int seg_x, int seg_z) 
     {
-        this.width  = seg_x;
-        this.height = seg_y;
+        this.seg_x  = seg_x;
+        this.seg_z  = seg_z;
         this.size_x = size_x;
-        this.size_y = size_y;
+        this.size_z = size_z;
 
-        this.pw = width + 1;
-        this.ph = height + 1;
+        this.px = seg_x + 1;
+        this.pz = seg_z + 1;
     }
 
 
     protected override GLArrayBuffer computeVertexData() 
     {
         int i = 0;
-        float sx = size_x / width,
-              sy = size_y / height,
-              half_w = size_x / 2.0f,
-              half_h = size_y / 2.0f;
+        float sx = size_x / seg_x,
+              sz = size_z / seg_z;
 
-        vec3[] points = new vec3[pw * ph];
-        for (int x = 0; x < pw; x++) 
-            for (int y = 0; y < ph; y++) {
-                points[i++] = vec3(x * sx, y * sy, 0);
-                writefln("vx %d - x: %f y: %f", i-1, x*sx, y*sy);
+        vec3[] points = new vec3[px * pz];
+        for (int x = 0; x < px; x++) 
+            for (int z = 0; z < pz; z++) {
+                points[i++] = vec3(x * sx, 0, z * sz);
+                writefln("vx %d - x: %f z: %f", i-1, x*sx, z*sz);
             }
 
         auto vb = new GLArrayBuffer();
@@ -183,7 +181,7 @@ class Quad : GLArray
 
     protected override GLArrayBuffer computeNormalData() 
     {
-        int count = pw * ph;
+        int count = px * pz;
         vec3[] normal = new vec3[count];
         for(int i = 0; i < count; i++) 
             normal[i] = vec3(0,1,0);
@@ -196,14 +194,14 @@ class Quad : GLArray
 
     protected override GLArrayBuffer computeTexcoordData() 
     {
-        int count = pw * ph,
+        int count = px * pz,
             i = 0;
-        float sx  = 1.0f / width,
-              sy  = 1.0f / height; 
+        float sx  = 1.0f / seg_x,
+              sy  = 1.0f / seg_z; 
 
-        vec2[] coords = new vec2[pw * ph];
-        for (int x = 0; x < pw; x++) 
-            for (int y = 0; y < ph; y++) {
+        vec2[] coords = new vec2[px * pz];
+        for (int x = 0; x < px; x++) 
+            for (int y = 0; y < pz; y++) {
                 coords[i++] = vec2(x * sx, y * sy);
                 writefln("tx %d - x: %f y: %f", i-1, x*sx, y*sy);
             }
@@ -217,16 +215,16 @@ class Quad : GLArray
     protected override GLElementBuffer computeElementData() 
     {
         int i = 0;
-        ushort[] idx = new ushort[width * height * 6];
-        for (int x = 0; x < width; x++) {
-            for (int y = 0; y < height; y++) {
-                idx[i++] = cast(ushort)( x*ph + y + 1 ); // tl 
-                idx[i++] = cast(ushort)( x*ph + y ); // bl
-                idx[i++] = cast(ushort)((x+1)*ph + y ); // br
+        ushort[] idx = new ushort[seg_x * seg_z * 6];
+        for (int x = 0; x < seg_x; x++) {
+            for (int z = 0; z < seg_z; z++) {
+                idx[i++] = cast(ushort)( x*pz + z + 1 ); // tl 
+                idx[i++] = cast(ushort)( x*pz + z ); // bl
+                idx[i++] = cast(ushort)((x+1)*pz + z ); // br
 
-                idx[i++] = cast(ushort)( x*ph + y + 1 ); // tl 
-                idx[i++] = cast(ushort)((x+1)*ph + y ); // br
-                idx[i++] = cast(ushort)((x+1)*ph + y+1 ); // tr
+                idx[i++] = cast(ushort)( x*pz + z + 1 ); // tl 
+                idx[i++] = cast(ushort)((x+1)*pz + z ); // br
+                idx[i++] = cast(ushort)((x+1)*pz + z+1 ); // tr
             }
         }
 

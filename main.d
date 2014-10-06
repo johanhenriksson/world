@@ -87,7 +87,7 @@ class World
     public mat4 IsometricPerspective(float x, float y, float z) 
     {
         return mat4.identity
-                   .rotatey(45 * 3.1415f / 180)
+                   .rotatey((90 + 45) * 3.1415f / 180)
                    .rotatex(35 * 3.1415f / 180)
                    .translate(1,1,0);
     }
@@ -97,7 +97,7 @@ class World
         auto cube = new IsoCube();
         cube.tesselate();
 
-        auto plane = new Quad(5,5);
+        auto plane = new Quad(5,5, 5, 5);
         plane.tesselate();
 
         auto model = mat4.identity;
@@ -151,13 +151,13 @@ class World
             //program.setVec3("CameraPos", position);
             program.setVec3("LightPos", vec3(-1,3,-1));
 
-            //plane.draw();
+            plane.draw();
 
             program.setMatrix4("Model", model);
-            cube.draw();
+            //cube.draw();
 
             program.setMatrix4("Model", model2);
-            cube.draw();
+            //cube.draw();
 
             program.setMatrix4("Model", model3);
             cube.draw();
