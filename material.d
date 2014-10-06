@@ -109,7 +109,7 @@ class Font
             throw new Exception(format("Could not load ttf font: %s", path));
     }
 
-    public Texture Render(string text, vec4 color) 
+    public SDL_Surface* Render(string text, vec4 color) 
     {
         /* Convert arguments */
         SDL_Color sdl_color = {
@@ -122,8 +122,7 @@ class Font
 
         /* Render to texture */
         auto surface = TTF_RenderText_Blended(ttf_font, cstr, sdl_color);
-        auto texture = new Texture(surface);
-        return texture;
+        return surface;
     }
 }
 
