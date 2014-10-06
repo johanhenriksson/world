@@ -35,11 +35,13 @@ struct MouseClickEvent
 struct MouseMoveEvent
 {
     vec2 point;
+    vec2 rel;
     bool consumed;
 
-    public this(vec2 point) 
+    public this(vec2 point, vec2 rel) 
     {
         this.point = point;
+        this.rel = rel;
         this.consumed = false;
     }
 }
@@ -47,10 +49,11 @@ struct MouseMoveEvent
 class UIElement
 {
     @property Transform2D Transform() { return transform; }
+    @property bool Hover() { return is_hover; }
 
     protected Transform2D transform;
     protected vec2 size;
-
+    protected bool is_hover;
     protected UIElement[] children;
 
     public this(vec3 position, vec2 size) 
@@ -87,6 +90,20 @@ class UIElement
         }
     }
 
+    public void mouseEnter(MouseMoveEvent* event) {
+        is_hover = true;
+        foreach(child; children) 
+            if (child.inside(event.point) && !child.Hover)
+                    child.mouseEnter(event);
+    }
+
+    public void mouseLeave(MouseMoveEvent* event) {
+        is_hover = false;
+        foreach(child; children) 
+            if (!child.inside(event.point) && child.Hover)
+                child.mouseLeave(event);
+    }
+
     public void drawColored(Shader shader) { 
         foreach(child; children) 
             child.drawColored(shader);
@@ -103,10 +120,13 @@ class UIButton : UIElement
     @property vec4 Color() { return background.Color; } 
     @property vec4 Color(vec4 value) { return background.Color = value; }
 
+    protected vec4 color = vec4(0.5f, 38.0f / 255, 38.0f / 255, 1);
+    protected vec4 hoverColor = vec4(1.0, 76.0f / 255, 76.0f / 255, 1);
+
     protected UIQuad background;
     protected UIText label;
 
-    public this(string text, int x, int y, int width, int height, vec4 color) {
+    public this(string text, int x, int y, int width, int height) {
         super(vec3(x,y,0), vec2(width, height));
 
         background = new UIQuad(this.size, color);
@@ -116,17 +136,13 @@ class UIButton : UIElement
             throw new Exception("No ui font");
 
         label = new UIText(vec2(10,10), "Hello World", vec4(1,1,1,1), UIFONT);
-        label.Transform.Parent = transform;
+
+        attach(label);
     }
 
     public override void drawColored(Shader shader) {
         shader.setMatrix4("Transform", transform.Matrix);
         background.drawColored(shader);
-    }
-
-    public override void drawTextured(Shader shader) {
-        shader.setMatrix4("Transform", transform.Matrix);
-        label.drawTextured(shader);
     }
 
     public override void click(MouseClickEvent* event) 
@@ -139,6 +155,16 @@ class UIButton : UIElement
         writeln("button clicked!");
         background.Color = vec4(0,0,1,1);
     }
+
+    public override void mouseEnter(MouseMoveEvent* event) {
+        background.Color = hoverColor; 
+        super.mouseEnter(event);
+    }
+
+    public override void mouseLeave(MouseMoveEvent* event) {
+        background.Color = color;
+        super.mouseLeave(event);
+    }
 }
 
 class UIText : UIElement
@@ -147,6 +173,18 @@ class UIText : UIElement
     @property vec4 Color() { return color; }
     @property Font TextFont() { return font; }
 
+    @property string Text(string value) {
+        text = value;
+        refresh();
+        return text;
+    }
+
+    @property vec4 Color(vec4 value) {
+        color = value;
+        refresh();
+        return color;
+    }
+
     private UITexture texture;
     private Font font;
     private string text;
@@ -154,7 +192,7 @@ class UIText : UIElement
 
     public this(vec2 position, string text, vec4 color, Font font) 
     {
-        super(vec3(position.x,position.y,0), vec2(0,0));
+        super(vec3(position.x, position.y, 0), vec2(0,0));
         this.font = font;
         this.text = text;
         this.color = color;
@@ -206,7 +244,7 @@ class UIManager
 
         viewport = mat4.orthographic(0, width, 0, height, -10000, 10000);
 
-        button = new UIButton("hello", 100, 100, 140, 40, vec4(1,0,0,0.5));
+        button = new UIButton("hello", 100, 100, 140, 40);
         elements = [ button ];
     }
 
@@ -261,6 +299,27 @@ class UIManager
         }
     }
 
+    protected void onMouseMove(SDL_Event event) 
+    {
+        auto ui_event = MouseMoveEvent(
+            vec2(event.motion.x, height - event.motion.y),
+            vec2(event.motion.xrel, -event.motion.yrel)
+        );
+
+        /* Update hover state */
+        foreach(child; elements) 
+        {
+            if (child.inside(ui_event.point)) {
+                if (!child.Hover)
+                    child.mouseEnter(&ui_event);
+            }
+            else {
+                if (child.Hover) 
+                    child.mouseLeave(&ui_event);
+            }
+        }
+    }
+
     public void processEvent(SDL_Event event) 
     {
         /* Handle Mouse & Keyboard GUI Input */
@@ -268,8 +327,7 @@ class UIManager
         {
             case SDL_MOUSEBUTTONDOWN: onMouseDown(event); break;
             case SDL_MOUSEBUTTONUP: onMouseUp(event); break;
-            case SDL_MOUSEMOTION:
-                break;
+            case SDL_MOUSEMOTION: onMouseMove(event); break;
             default: 
                 break;
         }

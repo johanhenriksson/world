@@ -77,8 +77,10 @@ class IsoCube : GLArray
         ];
 
         /* Center offset */
+        /*
         for(auto i = 0; i < points.length; i++) 
             points[i] = points[i] - vec3(0.5f, 0.5f, 0.5f);
+        */
 
         auto vb = new GLArrayBuffer();
         vb.bind();

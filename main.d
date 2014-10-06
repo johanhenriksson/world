@@ -17,6 +17,25 @@ import ui;
 
 pragma(lib, "libSDL2-2.0.so");
 
+vec3 Unproject(int x, int y, int width, int height, mat4 projection, mat4 view)
+{
+        float depth = 0.0f;
+        glReadPixels(x, height - y - 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, cast(void*) &depth);
+        /* Clip space coord */
+        auto point = vec4(
+            (cast(float)x / width) * 2 - 1, 
+            (1 - cast(float)y / height) * 2 - 1, 
+            depth * 2 - 1, 
+            1);
+
+        mat4 pvi = projection * view;
+        pvi.invert(); 
+        vec4 world = pvi * point;
+
+        /* World space coord */
+        return vec3(world.x / world.w, world.y / world.w, world.z / world.w);
+}
+
 class World
 {
     private SDL_Window* window;
@@ -70,7 +89,7 @@ class World
         return mat4.identity
                    .rotatey(45 * 3.1415f / 180)
                    .rotatex(35 * 3.1415f / 180)
-                   .translate(x, y, z);
+                   .translate(1,1,0);
     }
 
     public void run() 
@@ -83,7 +102,7 @@ class World
 
         auto model = mat4.identity;
         auto model2 = mat4.translation(1,0,0);
-        auto model3 = mat4.translation(0,-1,0);
+        auto model3 = mat4.translation(0,1,0);
 
 
         vec3 position = vec3(4, 3, 4);
@@ -95,7 +114,7 @@ class World
         program.use();
 
         /* MVP */
-        mat4 projection = mat4.orthographic(0, 8, 0, 6, -10000, 10000);
+        mat4 projection = mat4.orthographic(0, 8, 0, 6, -100, 100);
         program.setMatrix4("Projection", projection);
 
         auto ui = new UIManager(cast(int)size.x, cast(int)size.y);
@@ -123,30 +142,6 @@ class World
             float dt = (time - lastTime) / 1000.0f;
             lastTime = time;
 
-            SDL_Event event;
-            while (SDL_PollEvent(&event)) {
-                ui.processEvent(event);
-                switch(event.type) {
-                    case SDL_QUIT:
-                        run = false;
-                        break;
-                    case SDL_MOUSEBUTTONDOWN:
-                        mouse = true;
-                        break;
-                    case SDL_MOUSEBUTTONUP:
-                        mouse = false;
-                        break;
-                    case SDL_MOUSEMOTION:
-                        if (mouse) {
-                            auto p = vec3(event.motion.xrel, -event.motion.yrel, 0);
-                            position = position + p * 5 * dt;
-                            view = IsometricPerspective(position.x, position.y, position.z);
-                        }
-                        break;
-                    default: 
-                        break;
-                }
-            }
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -167,7 +162,33 @@ class World
             program.setMatrix4("Model", model3);
             cube.draw();
 
-            /* Clear depth buffer before drawing UI */
+            SDL_Event event;
+            while (SDL_PollEvent(&event)) {
+                ui.processEvent(event);
+                switch(event.type) {
+                    case SDL_QUIT:
+                        run = false;
+                        break;
+                    case SDL_MOUSEBUTTONDOWN:
+                        vec3 worldPos = Unproject(event.button.x, event.button.y, cast(int)size.x, cast(int)size.y, projection, view);
+                        writefln("world: %s", worldPos);
+                        mouse = true;
+                        break;
+                    case SDL_MOUSEBUTTONUP:
+                        mouse = false;
+                        break;
+                    case SDL_MOUSEMOTION:
+                        if (mouse) {
+                            auto p = vec3(event.motion.xrel, 0, -event.motion.yrel);
+                            position = position + p * 5 * dt;
+                            view = IsometricPerspective(position.x, position.y, position.z);
+                        }
+                        break;
+                    default: 
+                        break;
+                }
+            }
+
 
             ui.draw();
 
