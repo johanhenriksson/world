@@ -9,25 +9,28 @@ uniform vec3 LightPos;
 in vec3 Vertex;
 in vec2 TexCoord0;
 in vec3 Normal;
+out vec3 normal;
 
 out vec2 uv;
-out vec3 worldNormal;
-out vec3 L;
-out vec3 V;
-out float lightDistance;
+flat out float light;
 
 void main(void)
 {
     mat3 NormalMatrix = mat3(Model); /* no non-uniform scaling, we dont need the inverse transpose */
 
-    worldNormal = NormalMatrix * Normal;
+    vec3 worldNormal = NormalMatrix * Normal;
     uv = TexCoord0;
 
     vec4 worldPos = Model * vec4(Vertex, 1);
-    L = LightPos - worldPos.xyz;
-    lightDistance = length(L);
+    vec3 L = LightPos - worldPos.xyz;
+    float lightDistance = length(L);
     L = normalize(L);
-    V = normalize(CameraPos - worldPos.xyz);
+    vec3 V = normalize(CameraPos - worldPos.xyz);
+
+    normal = normalize(worldNormal);
+
+    float intensity = 5.6;
+    light = intensity / pow(lightDistance, 2) * (1.0 + 0.001 * max(0, dot(L, normal)));
 
     gl_Position = Projection * (View * worldPos);
 }

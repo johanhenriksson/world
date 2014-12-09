@@ -344,6 +344,7 @@ class UIQuad : GLArray
 
     vec4 color;
     vec2 size;
+    GLArrayBuffer vertexBuffer;
 
     public this(vec2 size, vec4 color)
     {
@@ -386,11 +387,6 @@ class UIQuad : GLArray
         this.bind();
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
-
-    protected override GLArrayBuffer computeVertexData() { return null; }
-    protected override GLArrayBuffer computeTexcoordData() { return null; }
-    protected override GLArrayBuffer computeNormalData() { return null; }
-    protected override GLElementBuffer computeElementData() { return null; }
 }
 
 class UITexture : GLArray
@@ -399,6 +395,8 @@ class UITexture : GLArray
 
     private Texture texture;
     private vec2 size;
+    GLArrayBuffer vertexBuffer;
+    GLArrayBuffer texcoordBuffer;
 
     public this(Texture texture, int width, int height) {
         this.texture = texture;
@@ -461,9 +459,4 @@ class UITexture : GLArray
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
     }
-
-    protected override GLArrayBuffer computeVertexData() { return null; }
-    protected override GLArrayBuffer computeTexcoordData() { return null; }
-    protected override GLArrayBuffer computeNormalData() { return null; }
-    protected override GLElementBuffer computeElementData() { return null; }
 }

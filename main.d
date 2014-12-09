@@ -89,7 +89,7 @@ class World
         return mat4.identity
                    .rotatey((90 + 45) * 3.1415f / 180)
                    .rotatex(35 * 3.1415f / 180)
-                   .translate(1,1,0);
+                   .translate(x,y,z);
     }
 
     public void run() 
@@ -97,7 +97,7 @@ class World
         auto cube = new IsoCube();
         cube.tesselate();
 
-        auto plane = new Quad(5,5, 5, 5);
+        auto plane = new HeightMap(5,5);
         plane.tesselate();
 
         auto model = mat4.identity;
@@ -142,14 +142,13 @@ class World
             float dt = (time - lastTime) / 1000.0f;
             lastTime = time;
 
-
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             program.use();
             material.use();
             program.setMatrix4("View", view);
-            //program.setVec3("CameraPos", position);
-            program.setVec3("LightPos", vec3(-1,3,-1));
+            program.setVec3("CameraPos", position);
+            program.setVec3("LightPos", vec3(1,5,1));
 
             plane.draw();
 
@@ -170,17 +169,17 @@ class World
                         run = false;
                         break;
                     case SDL_MOUSEBUTTONDOWN:
-                        vec3 worldPos = Unproject(event.button.x, event.button.y, cast(int)size.x, cast(int)size.y, projection, view);
-                        writefln("world: %s", worldPos);
                         mouse = true;
+                        vec3 worldPos = Unproject(event.button.x, event.button.y, cast(int)size.x, cast(int)size.y, projection, view);
+                        plane.click(event.button.button, worldPos);
                         break;
                     case SDL_MOUSEBUTTONUP:
                         mouse = false;
                         break;
                     case SDL_MOUSEMOTION:
                         if (mouse) {
-                            auto p = vec3(event.motion.xrel, 0, -event.motion.yrel);
-                            position = position + p * 5 * dt;
+                            auto p = vec3(event.motion.xrel, -event.motion.yrel, 0);
+                            position = position + p * 2 * dt;
                             view = IsometricPerspective(position.x, position.y, position.z);
                         }
                         break;
@@ -188,7 +187,6 @@ class World
                         break;
                 }
             }
-
 
             ui.draw();
 
@@ -221,7 +219,7 @@ void main()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
-    auto world = new World(800, 600);
+    auto world = new World(1200, 900);
     world.init();
     world.run();
 
