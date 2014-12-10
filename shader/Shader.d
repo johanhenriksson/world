@@ -1,8 +1,9 @@
+module shader.Shader;
+
 import std.string;
-import std.file;
-import std.stdio;
 import gl3n.linalg;
 import derelict.opengl3.gl;
+import shader;
 
 class Shader
 {
@@ -87,8 +88,8 @@ class Shader
     public static Shader Create(string shaderName) 
     {
         auto shader   = new Shader();
-        auto vertex   = new VertexShader(format("shaders/%s.vs.glsl", shaderName));
-        auto fragment = new FragmentShader(format("shaders/%s.fs.glsl", shaderName));
+        auto vertex   = new VertexShader(format("assets/shaders/%s.vs.glsl", shaderName));
+        auto fragment = new FragmentShader(format("assets/shaders/%s.fs.glsl", shaderName));
 
         vertex.compile();
         fragment.compile();
@@ -97,63 +98,5 @@ class Shader
         shader.attach(fragment);
         shader.link();
         return shader;
-    }
-}
-
-class ShaderProgram
-{
-    uint id;
-    uint type;
-    string path;
-    bool compiled;
-
-    this(uint type, string sourcePath) 
-    {
-        this.type = type;
-        this.path = sourcePath;
-        this.compiled = false;
-
-        this.id = glCreateShader(type);
-    }
-
-    public uint getId() {
-        return this.id;
-    }
-
-    void compile() {
-        string source = readText(this.path);
-        auto cstr = toStringz(source);
-
-        /* Upload source & compile */
-        glShaderSource(this.id, 1, &cstr, null);
-        glCompileShader(this.id);
-
-        int success = GL_FALSE;
-        glGetShaderiv(this.id, GL_COMPILE_STATUS, &success);
-        if (success == GL_FALSE) {
-            int length = 0;
-            char[] buffer = new char[1024];
-            glGetShaderInfoLog(this.id, 1024, &length, buffer.ptr);
-
-            throw new Exception(format("GLSL error in %s: %s", this.path, buffer));
-        }
-
-        this.compiled = true;
-    }
-
-    public bool isCompiled() {
-        return this.compiled;
-    }   
-}
-
-class VertexShader : ShaderProgram {
-    this(string sourcePath) {
-        super(GL_VERTEX_SHADER, sourcePath);
-    }
-}
-
-class FragmentShader : ShaderProgram {
-    this(string sourcePath) {
-        super(GL_FRAGMENT_SHADER, sourcePath);
     }
 }

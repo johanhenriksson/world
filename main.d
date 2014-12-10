@@ -94,18 +94,12 @@ class World
 
     public void run() 
     {
-        auto cube = new IsoCube();
-        cube.tesselate();
-
-        auto plane = new HeightMap(5,5);
+        auto plane = new HeightMap(15,15);
         plane.tesselate();
 
         auto model = mat4.identity;
-        auto model2 = mat4.translation(1,0,0);
-        auto model3 = mat4.translation(0,1,0);
 
-
-        vec3 position = vec3(4, 3, 4);
+        vec3 position = vec3(4, 5, 4);
         /* isometric view */
         auto view = IsometricPerspective(position.x, position.y, position.z);
 
@@ -130,7 +124,7 @@ class World
 
         auto material = new Material(program);
         writeln("setting diffuse?");
-        material.Diffuse = new Texture("rock.jpg");
+        material.Diffuse = new Texture("assets/rock.jpg");
 
         writeln("about to run loop");
         writeln(glGetError());
@@ -147,19 +141,11 @@ class World
             program.use();
             material.use();
             program.setMatrix4("View", view);
+            program.setMatrix4("Model", model);
             program.setVec3("CameraPos", position);
-            program.setVec3("LightPos", vec3(1,5,1));
+            program.setVec3("LightPos", vec3(7,7,7));
 
             plane.draw();
-
-            program.setMatrix4("Model", model);
-            //cube.draw();
-
-            program.setMatrix4("Model", model2);
-            //cube.draw();
-
-            program.setMatrix4("Model", model3);
-            cube.draw();
 
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
@@ -183,6 +169,10 @@ class World
                             view = IsometricPerspective(position.x, position.y, position.z);
                         }
                         break;
+                    case SDL_MOUSEWHEEL:
+                            position.y -= event.wheel.y;
+                            view = IsometricPerspective(position.x, position.y, position.z);
+                            break;
                     default: 
                         break;
                 }
@@ -200,6 +190,8 @@ class World
         }
     }
 }
+
+static Font UIFONT;
 
 void main() 
 {

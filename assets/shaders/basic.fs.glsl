@@ -13,7 +13,7 @@ out vec4 fragColor;
 void main(void)
 {
     float ambient = 0.25;
-    float intensity = 5.6;
+    float intensity = 15.6;
 
     vec4 diffuse = texture(Texture, uv);
 
