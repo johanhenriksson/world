@@ -6,18 +6,14 @@ import engine;
 
 class Camera : Component
 {
-    protected float fov;
+    protected float fov = 50.0f;
     protected float aspectRatio;
+    protected float near = 0.1f;
+    protected float far  = 100.0f;
     protected int width;
     protected int height;
 
     protected mat4 projection;
-
-    protected vec3 up;
-    protected vec3 forward;
-    protected vec3 right;
-    protected float pitch;
-    protected float yaw;
 
     @property mat4 ViewMatrix() { return entity.transform.ModelMatrix; }
     @property mat4 ProjectionMatrix() { return this.projection; }
@@ -27,22 +23,9 @@ class Camera : Component
         super(entity);
         this.width = width;
         this.height = height;
-        this.up = vec3(0,1,0);
 
-        projection = OrthograpicProjection(24, 8, -100, 100);
-        IsometricView();
+        projection = mat4.perspective(width, height, fov, near, far);
         aspectRatio = cast(float)width / height;
-    }
-
-    protected void refresh() {
-        /* Calculate current rotaiton */
-        vec3 euler = vec3(
-            cos(this.yaw) * cos(this.pitch),
-            sin(this.pitch),
-            sin(this.yaw) * cos(this.pitch)
-        );
-
-        //mat4.look_at(this.position, lookTarget, this.up);
     }
 
     public vec3 unproject(int x, int y)
@@ -62,15 +45,5 @@ class Camera : Component
 
         /* World space coord */
         return vec3(world.x / world.w, world.y / world.w, world.z / world.w);
-    }
-
-    /* Some static helpers */
-
-    public void IsometricView() {
-        transform.Angle = vec3(35, 135, 0);
-    }
-
-    public static mat4 OrthograpicProjection(float width, float height, float near, float far) {
-        return mat4.orthographic(0, width, 0, height, near, far);
     }
 }

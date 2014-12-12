@@ -19,55 +19,6 @@ import ui;
 
 pragma(lib, "libSDL2-2.0.so");
 
-vec3 Unproject(int x, int y, int width, int height, mat4 projection, mat4 view)
-{
-        float depth = 0.0f;
-        glReadPixels(x, height - y - 1, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, cast(void*) &depth);
-        /* Clip space coord */
-        auto point = vec4(
-            (cast(float)x / width) * 2 - 1, 
-            (1 - cast(float)y / height) * 2 - 1, 
-            depth * 2 - 1, 
-            1);
-
-        mat4 pvi = projection * view;
-        pvi.invert(); 
-        vec4 world = pvi * point;
-
-        /* World space coord */
-        return vec3(world.x / world.w, world.y / world.w, world.z / world.w);
-}
-
-class Camera
-{
-    protected float fov;
-    protected float aspectRatio;
-
-    protected mat4 projection;
-    protected mat4 view;
-
-    protected vec3 position;
-    protected vec3 up;
-    protected vec3 forward;
-    protected vec3 right;
-    protected float pitch;
-    protected float yaw;
-
-    @property mat4 viewMatrix() { return this.view; }
-    @property mat4 projectionMatrix() { return this.view; }
-
-    public this() {
-    }
-
-    protected void refresh() {
-        /* Calculate current rotaiton */
-        vec3 euler = vec3(
-            cos(this.yaw) * cos(this.pitch),
-            sin(this.pitch),
-            sin(this.yaw) * cos(this.pitch)
-        );
-    }
-}
 
 class World
 {
@@ -185,11 +136,6 @@ class World
                 switch(event.type) {
                     case SDL_QUIT:
                         run = false;
-                        break;
-                    case SDL_MOUSEBUTTONDOWN:
-                        mouse = true;
-                        vec3 worldPos = Unproject(event.button.x, event.button.y, cast(int)size.x, cast(int)size.y, projection, view);
-                        plane.click(event.button.button, worldPos);
                         break;
                     case SDL_MOUSEBUTTONUP:
                         mouse = false;

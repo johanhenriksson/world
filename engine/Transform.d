@@ -14,6 +14,9 @@ class Transform : Component
 
     private mat4 transform;
 
+    private vec3 forward;
+    private vec3 right;
+    private vec3 up;
     private vec3 position;
     private vec3 scale;
     private vec3 angle;
@@ -37,11 +40,20 @@ class Transform : Component
             refresh();
     }
 
-    protected void refresh() {
-        rotation  = quat.euler_rotation(AngleRadians.y, AngleRadians.x, AngleRadians.z);
+    protected void refresh() 
+    {
+        vec3 rot = AngleRadians;
+        rotation  = quat.euler_rotation(rot.y, rot.x, rot.z);
         transform = mat4.scaling(scale.x, scale.y, scale.z) * 
                     rotation.to_matrix!(4,4)() *
                     mat4.translation(position.x, position.y, position.z);
+        forward = vec3(
+            cos(rot.y) * cos(rot.x),
+            sin(rot.x),
+            sin(rot.y) * cos(rot.x)
+        );
+        right = forward.cross(vec3(0,1,0));
+        up = right.cross(forward);
         changed = false;
     }
 

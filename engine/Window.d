@@ -1,5 +1,6 @@
 module engine.Window;
 
+import std.stdio;
 import std.conv;
 import std.string;
 import gl3n.linalg;
@@ -25,6 +26,8 @@ class Window
     private SDL_GLContext context;
     private Viewport viewport;
     private UIManager uim;
+
+    private bool mouse;
 
     public this(string title, int width, int height) 
     {
@@ -55,7 +58,7 @@ class Window
         this.open = true;
 
         auto camObj = new Entity();
-        camObj.transform.Position = vec3(4,5,4);
+        camObj.transform.Position = vec3(0,5,0);
         auto camera = new Camera(camObj, width, height);
         camObj.attach(camera);
 
@@ -103,6 +106,21 @@ class Window
             switch(event.type) {
                 case SDL_QUIT:
                     this.close();
+                    break;
+                case SDL_MOUSEBUTTONUP:
+                    mouse = false;
+                    break;
+                case SDL_MOUSEBUTTONDOWN:
+                    mouse = true;
+                    break;
+                case SDL_MOUSEMOTION:
+                    if (mouse) {
+                        auto p = 2 * dt * vec3(event.motion.xrel, -event.motion.yrel, 0);
+                        vec3 angle = viewport.camera.transform.Angle;
+                        angle.x += p.y; // up-down: pitch
+                        angle.y += p.x; // left-right: yaw
+                        viewport.camera.transform.Angle = angle;
+                    }
                     break;
                 default:
                     break;
