@@ -2,6 +2,7 @@ module engine.Window;
 
 import std.conv;
 import std.string;
+import gl3n.linalg;
 import derelict.sdl2.sdl;
 import derelict.sdl2.ttf;
 import derelict.opengl3.gl;
@@ -11,9 +12,9 @@ import ui;
 /** Wraps the SDL window and GL context */
 class Window
 {
-    @property int Width() { return this.width; }
-    @property int Height() { return this.height; }
-    @property string Title() { return this.title; }
+    @property int Width() { return this.width; }
+    @property int Height() { return this.height; }
+    @property string Title() { return this.title; }
     @property bool isOpen() { return this.open; }
 
     private bool open;
@@ -53,11 +54,13 @@ class Window
 
         this.open = true;
 
+        auto camObj = new Entity();
+        camObj.transform.Position = vec3(4,5,4);
+        auto camera = new Camera(camObj, width, height);
+        camObj.attach(camera);
+
         uim = new UIManager(width, height);
-        viewport = new Viewport(
-            new Camera(width, height),
-            new Scene()
-        );
+        viewport = new Viewport(camera, new Scene());
     }
 
     public void close() 
@@ -107,6 +110,7 @@ class Window
         }
 
         /* Update scene */
+        //camera.tick(dt,time);
     }
 
     public void draw()
