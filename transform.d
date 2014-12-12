@@ -1,7 +1,51 @@
 import gl3n.linalg;
 
-class Transform3D {
+class Transform3D 
+{
+    protected mat4 transform;
+    protected vec3 position;
+    protected vec3 euler;
+    protected vec3 scale;
+    protected quat rotation;
+
+    public this(vec3 position, vec3 rotation) {
+        this.position = position;
+        this.EulerAngles = rotation;
+    }
+
+    @property vec3 Position() { return position; }
+    @property vec3 Position(vec3 position) { 
+        this.position = position; 
+        refresh();
+        return position;
+    }
+
+    @property vec3 Scale() { return scale; }
+    @property vec3 Scale(vec3 value) {
+        scale = value;
+        refresh();
+        return scale;
+    }
+
+    @property quat Rotation() { return rotation; }
+
+    @property vec3 EulerAngles() { return euler; }
+    @property vec3 EulerAngles(vec3 angles) {
+        this.euler = angles;
+        auto radians = (3.14159f / 180) * angles;
+        this.rotation = quat.euler_rotation(radians.y, radians.x, radians.z);
+        refresh();
+        return angles;
+    }
+
+    protected void refresh() {
+        transform = mat4.identity;
+        transform.scale(scale.x, scale.y, scale.z);
+        
+        transform.translate(position.x, position.y, position.z);
+    }
 }
+
 
 class Transform2D 
 {

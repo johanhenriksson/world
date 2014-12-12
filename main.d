@@ -1,6 +1,7 @@
 /* External */
 import std.stdio;
 import std.string;
+import std.math;
 import gl3n.math;
 import gl3n.linalg;
 import derelict.sdl2.sdl;
@@ -9,6 +10,7 @@ import derelict.sdl2.ttf;
 import derelict.opengl3.gl;
 import derelict.util.exception;
 
+import engine;
 import shader;
 import geometry;
 import material;
@@ -34,6 +36,37 @@ vec3 Unproject(int x, int y, int width, int height, mat4 projection, mat4 view)
 
         /* World space coord */
         return vec3(world.x / world.w, world.y / world.w, world.z / world.w);
+}
+
+class Camera
+{
+    protected float fov;
+    protected float aspectRatio;
+
+    protected mat4 projection;
+    protected mat4 view;
+
+    protected vec3 position;
+    protected vec3 up;
+    protected vec3 forward;
+    protected vec3 right;
+    protected float pitch;
+    protected float yaw;
+
+    @property mat4 viewMatrix() { return this.view; }
+    @property mat4 projectionMatrix() { return this.view; }
+
+    public this() {
+    }
+
+    protected void refresh() {
+        /* Calculate current rotaiton */
+        vec3 euler = vec3(
+            cos(this.yaw) * cos(this.pitch),
+            sin(this.pitch),
+            sin(this.yaw) * cos(this.pitch)
+        );
+    }
 }
 
 class World
@@ -79,7 +112,6 @@ class World
         //glDepthFunc(GL_LEQUAL);
         glClearColor(0.2, 0.2, 0.2, 1);
 
-        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); /* Draw backfacing as wireframe */
 
         TTF_Init();
     }
@@ -108,7 +140,7 @@ class World
         program.use();
 
         /* MVP */
-        mat4 projection = mat4.orthographic(0, 8, 0, 6, -100, 100);
+        mat4 projection = mat4.orthographic(0, 24, 0, 18, -100, 100);
         program.setMatrix4("Projection", projection);
 
         auto ui = new UIManager(cast(int)size.x, cast(int)size.y);
@@ -170,7 +202,7 @@ class World
                         }
                         break;
                     case SDL_MOUSEWHEEL:
-                            position.y -= event.wheel.y;
+                            position.z -= event.wheel.y;
                             view = IsometricPerspective(position.x, position.y, position.z);
                             break;
                     default: 
@@ -206,14 +238,42 @@ void main()
     }
 
     SDL_Init(SDL_INIT_EVERYTHING);
+    TTF_Init();
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 
+    /*
     auto world = new World(1200, 900);
     world.init();
     world.run();
+    */
+    Window wnd = new Window("hello world", 800, 600);
+    wnd.show();
+
+    float targetFrameTime = 1.0f / 60;
+
+    uint start_time = SDL_GetTicks();
+    uint last_time = start_time - 1;
+    while(wnd.isOpen) 
+    {
+        /* Frame time calculations */
+        uint time = SDL_GetTicks();
+        float elapsed = (time - start_time) / 1000.0f;
+        float dt = (time - last_time) / 1000.0f;
+        last_time = time;
+
+        wnd.tick(dt, elapsed);
+        wnd.draw();
+
+        /* Delay to target frame rate */
+        float delay = targetFrameTime - dt;
+        if (delay > 0.0f)
+            SDL_Delay(cast(uint)( delay * 1000 ));
+    }
+
+    /* Quit */
 
     SDL_Quit();
 }
