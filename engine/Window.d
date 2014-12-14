@@ -8,6 +8,7 @@ import derelict.sdl2.sdl;
 import derelict.sdl2.ttf;
 import derelict.opengl3.gl;
 import engine;
+import input;
 import ui;
 
 /** Wraps the SDL window and GL context */
@@ -104,7 +105,8 @@ class Window
         while (SDL_PollEvent(&event)) 
         {
             uim.processEvent(event);
-            switch(event.type) {
+            switch(event.type) 
+            {
                 case SDL_QUIT:
                     this.close();
                     break;
@@ -131,48 +133,12 @@ class Window
                         viewport.camera.transform.Angle = angle;
                     }
                     break;
+
+                case SDL_KEYUP:
                 case SDL_KEYDOWN:
-                    /* Check the SDLKey values and move change the coords */
-                    switch(event.key.keysym.sym) {
-                        case SDLK_a: {    // rotate the ship left
-                            auto pos = viewport.camera.transform.Position;
-                            pos -= 3 * viewport.camera.transform.Right * dt;
-                            viewport.camera.transform.Position = pos;
-                            break;
-                        }
-                        case SDLK_d: {
-                            auto pos = viewport.camera.transform.Position;
-                            pos += 3 * viewport.camera.transform.Right * dt;
-                            viewport.camera.transform.Position = pos;
-                            break;
-                        }
-                        case SDLK_w: {    
-                            auto pos = viewport.camera.transform.Position;
-                            pos += 3 * viewport.camera.transform.Forward * dt;
-                            viewport.camera.transform.Position = pos;
-                            break;
-                        }
-                        case SDLK_s: {    
-                            auto pos = viewport.camera.transform.Position;
-                            pos -= 3 * viewport.camera.transform.Forward * dt;
-                            viewport.camera.transform.Position = pos;
-                            break;
-                        }
-                        case SDLK_q: {    
-                            auto pos = viewport.camera.transform.Position;
-                            pos -= 3 * viewport.camera.transform.Up * dt;
-                            viewport.camera.transform.Position = pos;
-                            break;
-                        }
-                        case SDLK_e: {    
-                            auto pos = viewport.camera.transform.Position;
-                            pos += 3 * viewport.camera.transform.Up * dt;
-                            viewport.camera.transform.Position = pos;
-                            break;
-                        }
-                        default: break;
-                    }
+                    Keyboard.handleEvent(&event);
                     break;
+
                 default: break;
             }
         }
