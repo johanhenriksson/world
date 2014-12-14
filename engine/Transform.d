@@ -61,7 +61,6 @@ class Transform : Component
         forward = -vec3(transform[0][2], transform[1][2], transform[2][2]);
 
         inverse = transform.inverse();
-
         changed = false;
     }
 
@@ -84,5 +83,10 @@ class Transform : Component
         changed = true;
         refresh();
         return angle;
+    }
+
+    public vec3 TransformPoint(vec3 point) {
+        auto point = vec4(point, 1.0f);
+        return (transform * point).xyz;
     }
 }
