@@ -30,7 +30,7 @@ class HeightMapRenderer : Component
         material.use();
         shader.setMatrix4("Projection", viewport.Projection);
         shader.setMatrix4("View", viewport.View);
-        shader.setMatrix4("Model", mat4.identity); // entity.transform.ModelMatrix);
+        shader.setMatrix4("Model", transform.ModelMatrix); // entity.transform.ModelMatrix);
         shader.setVec3("CameraPos", viewport.camera.transform.Position);
         shader.setVec3("LightPos", vec3(7,7,7));
         heightmap.draw();

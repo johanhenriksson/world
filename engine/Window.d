@@ -58,7 +58,8 @@ class Window
         this.open = true;
 
         auto camObj = new Entity();
-        camObj.transform.Position = vec3(0,5,0);
+        camObj.transform.Position = vec3(0, 2, 0);
+        camObj.transform.Angle    = vec3(0, -90, 0);
         auto camera = new Camera(camObj, width, height);
         camObj.attach(camera);
 
@@ -115,20 +116,69 @@ class Window
                     break;
                 case SDL_MOUSEMOTION:
                     if (mouse) {
-                        auto p = 2 * dt * vec3(event.motion.xrel, -event.motion.yrel, 0);
+                        auto p = 10 * dt * vec3(event.motion.xrel, event.motion.yrel, 0);
                         vec3 angle = viewport.camera.transform.Angle;
-                        angle.x += p.y; // up-down: pitch
-                        angle.y += p.x; // left-right: yaw
+                        angle.x -= p.y; // up-down: pitch
+                        angle.y -= p.x; // left-right: yaw
+                        if (angle.x > 89)
+                            angle.x = 89;
+                        if (angle.x < -89)
+                            angle.x = -89;
+                        if (angle.y > 180)
+                            angle.y -= 360;
+                        if (angle.y < -180)
+                            angle.y += 360;
                         viewport.camera.transform.Angle = angle;
                     }
                     break;
-                default:
+                case SDL_KEYDOWN:
+                    /* Check the SDLKey values and move change the coords */
+                    switch(event.key.keysym.sym) {
+                        case SDLK_a: {    // rotate the ship left
+                            auto pos = viewport.camera.transform.Position;
+                            pos -= 3 * viewport.camera.transform.Right * dt;
+                            viewport.camera.transform.Position = pos;
+                            break;
+                        }
+                        case SDLK_d: {
+                            auto pos = viewport.camera.transform.Position;
+                            pos += 3 * viewport.camera.transform.Right * dt;
+                            viewport.camera.transform.Position = pos;
+                            break;
+                        }
+                        case SDLK_w: {    
+                            auto pos = viewport.camera.transform.Position;
+                            pos += 3 * viewport.camera.transform.Forward * dt;
+                            viewport.camera.transform.Position = pos;
+                            break;
+                        }
+                        case SDLK_s: {    
+                            auto pos = viewport.camera.transform.Position;
+                            pos -= 3 * viewport.camera.transform.Forward * dt;
+                            viewport.camera.transform.Position = pos;
+                            break;
+                        }
+                        case SDLK_q: {    
+                            auto pos = viewport.camera.transform.Position;
+                            pos -= 3 * viewport.camera.transform.Up * dt;
+                            viewport.camera.transform.Position = pos;
+                            break;
+                        }
+                        case SDLK_e: {    
+                            auto pos = viewport.camera.transform.Position;
+                            pos += 3 * viewport.camera.transform.Up * dt;
+                            viewport.camera.transform.Position = pos;
+                            break;
+                        }
+                        default: break;
+                    }
                     break;
+                default: break;
             }
         }
 
         /* Update scene */
-        //camera.tick(dt,time);
+        viewport.tick(dt, time);
     }
 
     public void draw()

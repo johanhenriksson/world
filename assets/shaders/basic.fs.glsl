@@ -4,6 +4,7 @@ uniform sampler2D Texture;
 
 in vec2 uv;
 in vec3 worldNormal;
+in vec4 worldPos;
 in vec3 L;
 in vec3 V;
 in float lightDistance;
@@ -23,7 +24,7 @@ void main(void)
     /* ambient minimum */
     light = max(ambient, light);
 
-    vec4 color = diffuse  * light;
+    vec4 color = worldPos / 10 + 0.01 * diffuse * light;
 
     color.w = 1.0;
     fragColor = color;

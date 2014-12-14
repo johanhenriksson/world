@@ -1,5 +1,6 @@
 module engine.Viewport;
 
+import std.stdio;
 import gl3n.linalg;
 import derelict.opengl3.gl;
 import engine;
@@ -18,8 +19,14 @@ class Viewport
         this.scene  = scene;
 
         heightmap = new Entity();
+        heightmap.transform.Position = vec3(-5,0,-5);
         auto renderer = new HeightMapRenderer(heightmap);
         heightmap.attach(renderer);
+    }
+
+    public void tick(float dt, float time) {
+        camera.tick(dt, time);
+        //scene.tick(dt, time);
     }
 
     public void draw() 

@@ -12,6 +12,7 @@ in vec3 Normal;
 
 out vec2 uv;
 out vec3 worldNormal;
+out vec4 worldPos;
 out vec3 L;
 out vec3 V;
 out float lightDistance;
@@ -23,7 +24,7 @@ void main(void)
     worldNormal = NormalMatrix * Normal;
     uv = TexCoord0;
 
-    vec4 worldPos = Model * vec4(Vertex, 1);
+    worldPos = Model * vec4(Vertex, 1);
     L = LightPos - worldPos.xyz;
     lightDistance = length(L);
     L = normalize(L);

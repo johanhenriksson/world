@@ -173,6 +173,8 @@ static Font UIFONT;
 
 void main() 
 {
+    writeln("vec3 size: %d", vec3.sizeof);
+
     DerelictGL.load();
     DerelictSDL2.load();
     DerelictSDL2Image.load();
