@@ -24,7 +24,7 @@ void main(void)
     /* ambient minimum */
     light = max(ambient, light);
 
-    vec4 color = worldPos / 10 + 0.01 * diffuse * light;
+    vec4 color = diffuse * light;
 
     color.w = 1.0;
     fragColor = color;

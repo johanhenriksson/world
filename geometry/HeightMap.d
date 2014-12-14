@@ -24,7 +24,7 @@ class HeightMap : Quad
         height = new float[][](px,pz);
         for(int i = 0; i < px; i++)
             for (int j = 0; j < pz; j++)
-                height[i][j] = sin(i / 10.0f);
+                height[i][j] = sin(i * 0.5);
     }
 
     public void click(ubyte button, vec3 point) 
@@ -67,5 +67,18 @@ class HeightMap : Quad
         vertexBuffer.bind();
         vertexBuffer.bufferData(points.length * 3, float.sizeof, cast(void*) points.ptr);
         return vertexBuffer;
+    }
+
+    protected override GLArrayBuffer computeNormalData() 
+    {
+        int count = px * pz;
+        vec3[] normal = new vec3[count];
+        for(int i = 0; i < count; i++) 
+            normal[i] = vec3(0,1,0);
+
+        auto nb = new GLArrayBuffer();
+        nb.bind();
+        nb.bufferData(normal.length * 3, float.sizeof, cast(void*) normal.ptr);
+        return nb;
     }
 }

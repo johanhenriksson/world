@@ -85,8 +85,9 @@ class Transform : Component
         return angle;
     }
 
-    public vec3 TransformPoint(vec3 point) {
-        auto point = vec4(point, 1.0f);
-        return (transform * point).xyz;
-    }
+    /* Transformations */
+    public vec3 TransformPoint(vec3 point) { return (transform * vec4(point, 1.0f)).xyz; }
+    public vec3 TransformDirection(vec3 direction) { return (transform * vec4(direction, 0.0f)).xyz; }
+    public vec3 InverseTransformPoint(vec3 point) { return (inverse * vec4(point, 1.0f)).xyz; }
+    public vec3 InverseTransformDirection(vec3 direction) { return (inverse * vec4(direction, 0.0f)).xyz; }
 }
