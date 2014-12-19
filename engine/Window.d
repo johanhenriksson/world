@@ -136,6 +136,7 @@ class Window
 
                 case SDL_KEYUP:
                 case SDL_KEYDOWN:
+                case SDL_TEXTINPUT:
                     Keyboard.handleEvent(&event);
                     break;
 

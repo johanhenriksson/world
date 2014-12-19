@@ -30,7 +30,7 @@ class Font
         auto cstr = toStringz(text);
 
         /* Render to texture */
-        auto surface = TTF_RenderText_Blended(ttf_font, cstr, sdl_color);
+        auto surface = TTF_RenderUTF8_Blended(ttf_font, cstr, sdl_color);
         return surface;
     }
 }
